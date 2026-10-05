@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <Version>0.1.0</Version>
+    <PackageId>Supertext.OrchardCore.Translation</PackageId>
+    <Title>Supertext Translation for Orchard Core</Title>
+    <Authors>Supertext AG</Authors>
+    <Description>Translate Orchard Core content items into other cultures with Supertext AI translation.</Description>
+    <PackageTags>OrchardCore;OrchardCoreCMS;Module;translation;localization;Supertext</PackageTags>
+    <PackageProjectUrl>https://github.com/Supertext/OrchardCore-Supertext-Translation</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OrchardCore.Module.Targets" Version="3.0.1" />
+    <PackageReference Include="OrchardCore.Admin.Abstractions" Version="3.0.1" />
+    <PackageReference Include="OrchardCore.ContentLocalization.Abstractions" Version="3.0.1" />
+    <PackageReference Include="OrchardCore.ContentManagement" Version="3.0.1" />
+    <PackageReference Include="OrchardCore.ContentManagement.Display" Version="3.0.1" />
+    <PackageReference Include="OrchardCore.Contents.Core" Version="3.0.1" />
+    <PackageReference Include="OrchardCore.ContentTypes.Abstractions" Version="3.0.1" />
+    <PackageReference Include="OrchardCore.DisplayManagement" Version="3.0.1" />
+    <PackageReference Include="OrchardCore.Localization.Abstractions" Version="3.0.1" />
+    <PackageReference Include="OrchardCore.Navigation.Core" Version="3.0.1" />
+    <PackageReference Include="OrchardCore.Settings.Core" Version="3.0.1" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+</Project>

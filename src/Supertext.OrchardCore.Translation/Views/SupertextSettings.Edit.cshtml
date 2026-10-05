@@ -1,0 +1,78 @@
+@model SupertextSettingsViewModel
+@{
+    var keyPlaceholder = Model.HasStoredApiKey ? T["A key is stored. Leave empty to keep it."].Value : T["Paste your Supertext API key"].Value;
+    var keyHint = T["Find it in your Supertext account under API keys. It may include the Supertext-Auth-Key prefix. The key is stored encrypted and checked when you save."];
+    var politenessFormal = T["Formal (e.g. German Sie)"];
+    var politenessInformal = T["Informal (e.g. German du)"];
+    var autoHint = T["When an editor creates a culture version from the Localizations menu, the copy is translated with Supertext before the editor opens it. Translate with Supertext works either way."];
+}
+
+<h3>@T["Connection"]</h3>
+
+<div class="mb-3">
+    <label asp-for="ApiKey" class="form-label">@T["API key"]</label>
+    @if (Model.ApiKeyFromEnvironment)
+    {
+        <div class="alert alert-info mb-0">@T["The API key comes from the SUPERTEXT_API_KEY environment variable (or the Supertext:ApiKey configuration) and overrides the one stored here."]</div>
+    }
+    else
+    {
+        <input asp-for="ApiKey" type="password" autocomplete="new-password" class="form-control" placeholder="@keyPlaceholder" />
+        <span class="hint">@keyHint</span>
+        @if (Model.HasStoredApiKey)
+        {
+            <div class="form-check mt-2">
+                <input asp-for="RemoveApiKey" type="checkbox" class="form-check-input" />
+                <label asp-for="RemoveApiKey" class="form-check-label">@T["Remove the stored API key"]</label>
+            </div>
+        }
+    }
+</div>
+
+<div class="mb-3">
+    <label asp-for="Endpoint" class="form-label">@T["API endpoint"]</label>
+    <input asp-for="Endpoint" class="form-control" placeholder="https://api.supertext.com/v1/" disabled="@Model.EndpointFromEnvironment" />
+    <span asp-validation-for="Endpoint"></span>
+    <span class="hint">@T["Leave empty to use {0}.", "https://api.supertext.com/v1/"]</span>
+    @if (Model.EndpointFromEnvironment)
+    {
+        <span class="hint d-block supertext-endpoint-env">@T["Set by SUPERTEXT_API_ENDPOINT: {0}", Model.EndpointInEffect]</span>
+    }
+</div>
+
+<h3>@T["Translation"]</h3>
+
+<div class="mb-3">
+    <div class="form-check">
+        <input asp-for="TranslateNewLocalizations" type="checkbox" class="form-check-input" />
+        <label asp-for="TranslateNewLocalizations" class="form-check-label">@T["Translate new localizations automatically"]</label>
+    </div>
+    <span class="hint">@autoHint</span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Politeness" class="form-label">@T["Form of address"]</label>
+    <select asp-for="Politeness" class="form-select">
+        <option value="default">@T["As in the source"]</option>
+        <option value="more">@politenessFormal</option>
+        <option value="less">@politenessInformal</option>
+    </select>
+</div>
+
+<div class="mb-3">
+    <label asp-for="LanguageMapping" class="form-label">@T["Language codes"]</label>
+    <textarea asp-for="LanguageMapping" rows="3" class="form-control font-monospace" placeholder="de=de-CH"></textarea>
+    <span class="hint">@T["One culture=code per line, if Supertext should get a different language code than the culture's name. Cultures of this site: {0}.", string.Join(", ", Model.Cultures)]</span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="ExcludedFields" class="form-label">@T["Fields not to translate"]</label>
+    <textarea asp-for="ExcludedFields" rows="3" class="form-control font-monospace" placeholder="Article.Subtitle"></textarea>
+    <span class="hint">@T["One per line: Part.Field (e.g. Article.Subtitle), a part (e.g. HtmlBodyPart) or ContentType.Part.Field. Excluded fields keep the source text."]</span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="PollTimeoutSeconds" class="form-label">@T["Timeout per language (seconds)"]</label>
+    <input asp-for="PollTimeoutSeconds" type="number" min="30" max="3600" class="form-control" style="max-width: 10rem" />
+    <span asp-validation-for="PollTimeoutSeconds"></span>
+</div>

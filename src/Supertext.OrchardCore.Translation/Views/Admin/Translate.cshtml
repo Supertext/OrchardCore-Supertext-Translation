@@ -1,0 +1,87 @@
+@model TranslateViewModel
+
+<zone Name="Title"><h1>@RenderTitleSegments(T["Translate with Supertext"])</h1></zone>
+
+<p class="lead mb-1">@Model.Title</p>
+<p class="text-muted">@T["{0} · source language: {1} ({2})", Model.ContentType, Model.SourceCultureName, Model.SourceCulture]</p>
+
+@if (Model.ApiKeyMissing)
+{
+    <div class="alert alert-warning">@T["No Supertext API key is configured. An administrator can add it under Settings → Supertext."]</div>
+}
+@if (Model.HasDraft)
+{
+    <div class="alert alert-info">@T["This item has an unpublished draft. The draft (the latest saved version) is translated."]</div>
+}
+
+<form asp-route="Supertext.Translate.Post" asp-route-contentItemId="@Model.ContentItemId" method="post">
+    <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+
+    @if (Model.Targets.Count == 0)
+    {
+        <div class="alert alert-info">@T["The site has only one culture. Add cultures under Settings → Localization → Cultures."]</div>
+    }
+    else
+    {
+        <table class="table supertext-targets">
+            <thead>
+                <tr>
+                    <th style="width: 2.5rem"></th>
+                    <th>@T["Language"]</th>
+                    <th>@T["Status"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var target in Model.Targets)
+                {
+                    var id = "culture-" + target.Culture;
+                    <tr>
+                        <td><input type="checkbox" class="form-check-input" name="cultures" value="@target.Culture" id="@id" checked="@target.Selected" /></td>
+                        <td><label for="@id">@target.CultureName <span class="text-muted">(@target.Culture)</span></label></td>
+                        <td>
+                            @if (target.ExistingContentItemId is null)
+                            {
+                                <span class="badge text-bg-secondary">@T["Not translated yet"]</span>
+                            }
+                            else
+                            {
+                                if (target.ExistingPublished)
+                                {
+                                    <span class="badge text-bg-success">@T["Published"]</span>
+                                }
+                                if (target.ExistingHasDraft)
+                                {
+                                    <span class="badge text-bg-warning">@T["Draft"]</span>
+                                }
+                                <a asp-route="EditContentItem" asp-route-contentItemId="@target.ExistingContentItemId" asp-route-returnUrl="@FullRequestPath" class="ms-1">@target.ExistingTitle</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (Model.ShowOverwriteWarning)
+        {
+            <div class="alert alert-warning supertext-overwrite">
+                <p class="mb-2"><strong>@T["Some of the selected languages already have a translation."]</strong> @T["Translating again replaces their texts with a new translation of the source, including any changes made by hand. Their URL and culture stay as they are; the result is saved as a draft."]</p>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="confirmOverwrite" value="true" id="confirmOverwrite" />
+                    <label class="form-check-label" for="confirmOverwrite">@T["Yes, overwrite the existing translations"]</label>
+                </div>
+            </div>
+        }
+
+        <p class="text-muted small">@T["Languages are translated one after the other and saved as drafts. This can take a minute for long pages."]</p>
+        <button type="submit" class="btn btn-primary supertext-submit" disabled="@Model.ApiKeyMissing"><i class="fa-solid fa-language" aria-hidden="true"></i> @T["Translate"]</button>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ReturnUrl))
+    {
+        <a class="btn btn-secondary" href="@Model.ReturnUrl">@T["Back"]</a>
+    }
+    else
+    {
+        <a class="btn btn-secondary" asp-route="EditContentItem" asp-route-contentItemId="@Model.ContentItemId">@T["Back to the item"]</a>
+    }
+</form>
