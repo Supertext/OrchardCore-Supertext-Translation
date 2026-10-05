@@ -16,11 +16,13 @@ var app = builder.Build();
 // after deployment instead of on the first visitor's request.
 app.Lifetime.ApplicationStarted.Register(() => _ = Task.Run(async () =>
 {
-    var address = app.Urls.FirstOrDefault()?.Replace("://+", "://127.0.0.1").Replace("://*", "://127.0.0.1").Replace("://0.0.0.0", "://127.0.0.1");
-    if (address is null)
+    // Kestrel reports e.g. "http://[::]:8080"; call it on the loopback address instead.
+    var port = System.Text.RegularExpressions.Regex.Match(app.Urls.FirstOrDefault() ?? string.Empty, @":(\d+)/?$");
+    if (!port.Success)
     {
         return;
     }
+    var address = $"http://127.0.0.1:{port.Groups[1].Value}/";
     using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(3) };
     for (var attempt = 0; attempt < 3; attempt++)
     {
