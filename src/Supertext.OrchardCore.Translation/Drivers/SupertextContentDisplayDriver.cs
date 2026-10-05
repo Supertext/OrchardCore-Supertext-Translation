@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using OrchardCore;
+using OrchardCore.ContentLocalization;
+using OrchardCore.Contents;
 using OrchardCore.ContentLocalization.Models;
 using OrchardCore.ContentManagement;
 using OrchardCore.ContentManagement.Display.ContentDisplay;
@@ -36,6 +38,12 @@ public sealed class SupertextContentDisplayDriver(IAuthorizationService authoriz
             .RenderWhen(() => CanTranslateAsync(contentItem));
     }
 
-    private Task<bool> CanTranslateAsync(ContentItem contentItem)
-        => authorizationService.AuthorizeAsync(httpContextAccessor.HttpContext?.User, SupertextPermissions.TranslateWithSupertext, contentItem);
+    /// <summary>Same checks as the Translate page, so the button never leads to "access denied".</summary>
+    private async Task<bool> CanTranslateAsync(ContentItem contentItem)
+    {
+        var user = httpContextAccessor.HttpContext?.User;
+        return await authorizationService.AuthorizeAsync(user, SupertextPermissions.TranslateWithSupertext, contentItem)
+            && await authorizationService.AuthorizeAsync(user, ContentLocalizationPermissions.LocalizeContent, contentItem)
+            && await authorizationService.AuthorizeAsync(user, CommonPermissions.EditContent, contentItem);
+    }
 }

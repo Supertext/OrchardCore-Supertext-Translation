@@ -71,9 +71,10 @@ public sealed class SupertextSettingsDisplayDriver(
         var model = new SupertextSettingsViewModel();
         await context.Updater.TryUpdateModelAsync(model, Prefix);
 
-        if (!string.IsNullOrWhiteSpace(model.Endpoint) && !Uri.TryCreate(model.Endpoint.Trim(), UriKind.Absolute, out _))
+        var endpointFromEnvironment = configuration.EndpointFromEnvironment != string.Empty;
+        if (!endpointFromEnvironment && !string.IsNullOrWhiteSpace(model.Endpoint) && !IsSafeEndpoint(model.Endpoint.Trim()))
         {
-            context.Updater.ModelState.AddModelError(Prefix, nameof(model.Endpoint), S["The endpoint must be an absolute URL, e.g. https://api.supertext.com/v1/."]);
+            context.Updater.ModelState.AddModelError(Prefix, nameof(model.Endpoint), S["The endpoint must be an https URL, e.g. https://api.supertext.com/v1/ (http only for localhost)."]);
         }
         if (model.PollTimeoutSeconds is < 30 or > 3600)
         {
@@ -90,7 +91,11 @@ public sealed class SupertextSettingsDisplayDriver(
             {
                 settings.ProtectedApiKey = configuration.Protect(model.ApiKey);
             }
-            settings.Endpoint = string.IsNullOrWhiteSpace(model.Endpoint) ? null : model.Endpoint.Trim();
+            // A disabled field (endpoint set by the environment) isn't posted: keep the stored value.
+            if (!endpointFromEnvironment)
+            {
+                settings.Endpoint = string.IsNullOrWhiteSpace(model.Endpoint) ? null : model.Endpoint.Trim();
+            }
             settings.Politeness = model.Politeness is "more" or "less" ? model.Politeness : "default";
             settings.TranslateNewLocalizations = model.TranslateNewLocalizations;
             settings.LanguageMapping = model.LanguageMapping?.Trim();
@@ -102,6 +107,11 @@ public sealed class SupertextSettingsDisplayDriver(
 
         return await EditAsync(site, settings, context);
     }
+
+    /// <summary>The API key travels in a header: only https, or http to this machine for testing.</summary>
+    private static bool IsSafeEndpoint(string endpoint)
+        => Uri.TryCreate(endpoint, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttps || (uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback));
 
     /// <summary>Cost-free check of the key in effect after saving.</summary>
     private async Task CheckConnectionAsync(SupertextSettings settings)

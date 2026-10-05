@@ -55,5 +55,11 @@ public sealed class SupertextLocalizationHandler(
             logger.LogWarning(e, "Supertext translation of {ContentItemId} into {Culture} failed.", context.Original.ContentItemId, context.Culture);
             await notifier.WarningAsync(H["The {0} version was created but not translated: {1}", cultureName, e.Message]);
         }
+        catch (Exception e)
+        {
+            // Never break Orchard Core's own localization: the editor still gets the copy.
+            logger.LogError(e, "Unexpected error translating {ContentItemId} into {Culture}.", context.Original.ContentItemId, context.Culture);
+            await notifier.WarningAsync(H["The {0} version was created but not translated because of an unexpected error. Try Translate with Supertext later.", cultureName]);
+        }
     }
 }

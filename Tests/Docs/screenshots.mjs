@@ -93,7 +93,7 @@ await page.click('button.publish');
 await page.waitForLoadState('networkidle');
 await page.goto(`${base}/${germanPath}`);
 await page.setViewportSize({ width: 1100, height: 760 });
-await page.evaluate(() => window.scrollTo(0, 260));
+await page.evaluate(() => window.scrollTo(0, 120));
 // JPEG: the theme's photo header would make a PNG ~1 MB.
 await page.screenshot({ path: out + 'translated-site.jpg', type: 'jpeg', quality: 70 });
 console.log('wrote translated-site.jpg');

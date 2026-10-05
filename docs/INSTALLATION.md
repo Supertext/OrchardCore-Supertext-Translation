@@ -77,7 +77,7 @@ Translated items get their URL from the translated title when they are saved.
 
 | Permission | Default roles | Allows |
 | --- | --- | --- |
-| Translate content with Supertext | Administrator, Editor | The *Supertext* buttons and the *Translate with Supertext* page. Also needs *Localize content* and *Edit content* on the item. |
+| Translate content with Supertext | Administrator, Editor | The *Supertext* buttons and the *Translate with Supertext* page, together with *Localize content* and *Edit content* on the item (the buttons only show when the user has all three). |
 | Manage Supertext settings | Administrator | **Settings → Supertext** |
 
 Grant them on the **Roles** page (`/Admin/Roles/Index`).
@@ -87,12 +87,12 @@ Grant them on the **Roles** page (`/Admin/Roles/Index`).
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | API key | – | See above. |
-| API endpoint | `https://api.supertext.com/v1/` | Change only for testing. |
+| API endpoint | `https://api.supertext.com/v1/` | Change only for testing. Must be `https` (plain `http` only to `localhost`), because the API key travels with every request. Read-only while `SUPERTEXT_API_ENDPOINT` is set. |
 | Translate new localizations automatically | on | When an editor creates a culture version with Orchard Core's *Localizations* menu, the copy is translated before the editor opens it. Off: the copy stays in the source language; *Translate with Supertext* still works. |
 | Form of address | As in the source | *Formal* or *Informal* for languages that distinguish them (German *Sie*/*du*, French *vous*/*tu* …). |
 | Language codes | – | One `culture=code` per line, e.g. `de=de-CH` if your site uses `de` but you want Swiss German. |
-| Fields not to translate | – | One per line: `Part.Field` (e.g. `Article.Subtitle`), a whole part (e.g. `HtmlBodyPart`) or `ContentType.Part.Field`. These keep the source text. |
-| Timeout per language | 300 s | How long to wait for Supertext per language before giving up. |
+| Fields not to translate | – | One per line (or separated by commas): `Part.Field` (e.g. `Article.Subtitle`), a whole part (e.g. `HtmlBodyPart`) or `ContentType.Part.Field`. These keep the source text. |
+| Timeout per language | 300 s | How long to wait for Supertext per language before giving up (30–3600 s). |
 
 ## Troubleshooting
 

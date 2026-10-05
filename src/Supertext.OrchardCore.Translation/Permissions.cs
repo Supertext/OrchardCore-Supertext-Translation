@@ -7,7 +7,7 @@ public static class SupertextPermissions
 {
     public static readonly Permission TranslateWithSupertext = new("TranslateWithSupertext", "Translate content with Supertext");
 
-    public static readonly Permission ManageSupertextSettings = new("ManageSupertextSettings", "Manage Supertext settings (API key)");
+    public static readonly Permission ManageSupertextSettings = new("ManageSupertextSettings", "Manage Supertext settings");
 }
 
 public sealed class Permissions : IPermissionProvider
