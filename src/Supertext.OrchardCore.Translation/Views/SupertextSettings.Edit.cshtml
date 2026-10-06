@@ -1,7 +1,9 @@
 @model SupertextSettingsViewModel
 @{
     var keyPlaceholder = Model.HasStoredApiKey ? T["A key is stored. Leave empty to keep it."].Value : T["Paste your Supertext API key"].Value;
-    var keyHint = T["Find it in your Supertext account under API keys. It may include the Supertext-Auth-Key prefix. The key is stored encrypted and checked when you save."];
+    var keyHint = T["It may include the Supertext-Auth-Key prefix. The key is stored encrypted and checked when you save."];
+    var signupUrl = "https://www.supertext.com/person/en/account/signin";
+    var apiKeyUrl = "https://www.supertext.com/en/integrations/api";
     var politenessFormal = T["Formal (e.g. German Sie)"];
     var politenessInformal = T["Informal (e.g. German du)"];
     var autoHint = T["When an editor creates a culture version from the Localizations menu, the copy is translated with Supertext before the editor opens it. Translate with Supertext works either way."];
@@ -19,6 +21,7 @@
     {
         <input asp-for="ApiKey" type="password" autocomplete="new-password" class="form-control" placeholder="@keyPlaceholder" />
         <span class="hint">@keyHint</span>
+        <span class="hint d-block supertext-key-help">@T["No Supertext account yet? <a href=\"{0}\" target=\"_blank\" rel=\"noopener\">Create one at supertext.com</a>. Generate your API key at <a href=\"{1}\" target=\"_blank\" rel=\"noopener\">supertext.com → Integrations → API</a> (requires the Admin role).", signupUrl, apiKeyUrl]</span>
         @if (Model.HasStoredApiKey)
         {
             <div class="form-check mt-2">

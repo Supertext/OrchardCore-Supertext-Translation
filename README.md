@@ -6,7 +6,7 @@ Translate Orchard Core content items into other cultures with [Supertext](https:
 - **Automatic**: when you create a culture version with Orchard Core's own *Localizations* menu, the copy is translated before the editor opens it.
 - Translates titles, HTML and Markdown bodies, text, HTML, Markdown and link fields, media alt texts, and widgets in Flow, Bag and Widgets List parts. Formatting, links and Liquid stay intact.
 
-Requires Orchard Core 3.0 (.NET 10) with the *Content Localization* feature.
+Requires Orchard Core 3.0 (.NET 10) with the *Content Localization* feature, and a Supertext API key: [create a Supertext account](https://www.supertext.com/person/en/account/signin), then generate the key at [supertext.com → Integrations → API](https://www.supertext.com/en/integrations/api) (requires the Admin role).
 
 | Guide | For |
 | --- | --- |

@@ -119,7 +119,7 @@ public sealed class SupertextSettingsDisplayDriver(
         var apiKey = configuration.ApiKeyFromEnvironment != string.Empty ? configuration.ApiKeyFromEnvironment : configuration.Unprotect(settings.ProtectedApiKey);
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            await notifier.WarningAsync(H["No Supertext API key is set yet, so content can't be translated."]);
+            await notifier.WarningAsync(H["No Supertext API key is set yet, so content can't be translated. Generate one at <a href=\"{0}\" target=\"_blank\" rel=\"noopener\">supertext.com → Integrations → API</a> (requires the Admin role; no account yet? <a href=\"{1}\" target=\"_blank\" rel=\"noopener\">create one</a>).", "https://www.supertext.com/en/integrations/api", "https://www.supertext.com/person/en/account/signin"]);
             return;
         }
         var endpoint = configuration.EndpointFromEnvironment != string.Empty ? configuration.EndpointFromEnvironment

@@ -6,7 +6,7 @@ For administrators who install and configure the module.
 
 - Orchard Core **3.0** (tested with 3.0.1) on .NET 10.
 - The Orchard Core features **Localization** and **Content Localization** (the module enables them as dependencies).
-- A Supertext account with an API key for AI translation.
+- A Supertext account with an API key for AI translation (see [API key](#api-key)).
 - The server must reach `https://api.supertext.com` over HTTPS.
 
 ## Install
@@ -41,7 +41,14 @@ Disable **Supertext Translation** on the **Features** page (`/Admin/Features`), 
 
 **Settings → Supertext** (`/Admin/Settings/supertext`; requires the *Manage Supertext settings* permission; administrators have it).
 
-1. Paste the API key from your Supertext account. A key copied with its `Supertext-Auth-Key` prefix works too.
+Get a key first:
+
+- No Supertext account yet? [Log in or create a Supertext account](https://www.supertext.com/person/en/account/signin) with your e-mail address.
+- Generate the AI API key at [supertext.com → Integrations → API](https://www.supertext.com/en/integrations/api). This requires the **Admin** role in your Supertext account.
+
+The settings page shows both links below the API key field.
+
+1. Paste the API key. A key copied with its `Supertext-Auth-Key` prefix works too.
 2. Click **Save**. The module checks the key with Supertext (free of charge) and shows *Connected to Supertext. The API key works.* or the reason it failed.
 
 ![Settings → Supertext with a stored API key and the connection check](images/settings.png)
@@ -98,8 +105,8 @@ Grant them on the **Roles** page (`/Admin/Roles/Index`).
 
 | Message or problem | What to do |
 | --- | --- |
-| *No Supertext API key is configured* | Add the key under **Settings → Supertext**, or set `SUPERTEXT_API_KEY`. |
-| *Authentication failed. Please check the Supertext API key.* | The key is wrong or revoked. Paste it again. |
+| *No Supertext API key is configured* / *No Supertext API key is set yet* | Add the key under **Settings → Supertext**, or set `SUPERTEXT_API_KEY`. Generate one at [supertext.com → Integrations → API](https://www.supertext.com/en/integrations/api) (Admin role). |
+| *Authentication failed. Please check the Supertext API key.* | The key is wrong or revoked. Paste it again, or generate a new one at [supertext.com → Integrations → API](https://www.supertext.com/en/integrations/api). |
 | *The stored Supertext API key could not be decrypted* (log) | The data protection keys changed (e.g. a new container without `App_Data`). Enter the key again, and keep `App_Data` on persistent storage. |
 | *Too many requests to Supertext* | The module already retries rate limits 4 times; try again in a minute. |
 | *Timed out waiting for the Supertext translation* | Very long items: raise the timeout. |
