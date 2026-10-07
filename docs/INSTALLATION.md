@@ -53,6 +53,8 @@ The settings page shows both links below the API key field.
 
 ![Settings → Supertext with a stored API key and the connection check](images/settings.png)
 
+The bottom of the page shows the installed **Module version** (read from the module itself). For a release version it links to that release's notes on GitHub; quote it when you contact support.
+
 The key is stored encrypted with ASP.NET Core data protection. It is never shown again; leave the field empty to keep it, or tick **Remove the stored API key**.
 
 **Environment variables win** over the settings page (useful for containers):

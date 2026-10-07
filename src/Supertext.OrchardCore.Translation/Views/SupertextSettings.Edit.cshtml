@@ -79,3 +79,17 @@
     <input asp-for="PollTimeoutSeconds" type="number" min="30" max="3600" class="form-control" style="max-width: 10rem" />
     <span asp-validation-for="PollTimeoutSeconds"></span>
 </div>
+
+@if (!string.IsNullOrEmpty(Model.ModuleVersion))
+{
+    <p class="text-muted small supertext-module-version">
+        @if (Model.ModuleReleaseUrl != null)
+        {
+            @T["Module version: <a href=\"{0}\" target=\"_blank\" rel=\"noopener\">{1}</a>", Model.ModuleReleaseUrl, Model.ModuleVersion]
+        }
+        else
+        {
+            @T["Module version: {0}", Model.ModuleVersion]
+        }
+    </p>
+}

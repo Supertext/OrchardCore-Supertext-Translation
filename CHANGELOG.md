@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## Unreleased
 
+### Added
+
+- Settings → Supertext shows the installed module version, linked to its GitHub release notes.
+
 ## 0.1.0 — 2026-10-07
 
 ### Added

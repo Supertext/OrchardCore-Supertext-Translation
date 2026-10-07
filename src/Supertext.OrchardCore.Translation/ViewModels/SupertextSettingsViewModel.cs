@@ -30,4 +30,9 @@ public class SupertextSettingsViewModel
     public bool EndpointFromEnvironment { get; set; }
 
     public IReadOnlyList<string> Cultures { get; set; } = [];
+
+    public string ModuleVersion { get; set; }
+
+    /// <summary>GitHub release page when <see cref="ModuleVersion"/> is a release (X.Y.Z), else null.</summary>
+    public string ModuleReleaseUrl { get; set; }
 }

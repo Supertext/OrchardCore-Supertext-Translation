@@ -71,7 +71,7 @@ If a Razor view suddenly fails with errors at impossible positions after editing
 ## Tests
 
 ```bash
-dotnet test tests/Supertext.OrchardCore.Translation.Tests   # HTML packing, Liquid protection, content walker, settings parsing
+dotnet test tests/Supertext.OrchardCore.Translation.Tests   # HTML packing, Liquid protection, content walker, settings parsing, module version
 ```
 
 CI (`.github/workflows/ci.yml`) builds the module and the demo, runs the tests, checks the demo entrypoint and the Node scripts' syntax.
@@ -137,6 +137,8 @@ Releases are published by `.github/workflows/release.yml` when the version is of
 2. Set the same version in:
    - `src/Supertext.OrchardCore.Translation/Supertext.OrchardCore.Translation.csproj`: `Version`, the NuGet package version
    - `src/Supertext.OrchardCore.Translation/Manifest.cs`: the module's `Version`
+
+   Settings → Supertext shows the assembly's informational version (from the `.csproj` `Version`, build metadata after `+` stripped; `Services/ModuleVersion.cs`) and links X.Y.Z to its GitHub release; there is no other copy to update.
 3. Push to `main`. The workflow checks that the version files match `CHANGELOG.md`, then tags `vX.Y.Z` and creates the GitHub release with the CHANGELOG section as notes (0.x versions as pre-releases). A push that adds no new version does nothing, and a version that is already released is skipped. After fixing a failed run, start it again with *Run workflow* on the *Release* workflow.
 
 Publishing to NuGet stays manual: `dotnet pack src/Supertext.OrchardCore.Translation -c Release`, then push the package (tagged `OrchardCoreCMS` and `Module`, so it is found as an Orchard Core module).

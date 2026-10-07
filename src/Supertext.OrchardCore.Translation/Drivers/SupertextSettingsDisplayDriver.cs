@@ -58,6 +58,8 @@ public sealed class SupertextSettingsDisplayDriver(
             model.ExcludedFields = settings.ExcludedFields;
             model.PollTimeoutSeconds = settings.PollTimeoutSeconds;
             model.Cultures = cultures;
+            model.ModuleVersion = ModuleVersion.Current;
+            model.ModuleReleaseUrl = ModuleVersion.ReleaseUrl(ModuleVersion.Current);
         }).Location("Content:2").OnGroup(SettingsGroupId);
     }
 
