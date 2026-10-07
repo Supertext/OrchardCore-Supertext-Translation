@@ -131,10 +131,15 @@ docker run --rm -p 8080:8080 -v orcharddemo:/data \
 
 ## Releasing
 
-1. Update `Version` in the `.csproj`, `Version` in `Manifest.cs`, and move *Unreleased* in `CHANGELOG.md` to the version.
-2. `dotnet pack src/Supertext.OrchardCore.Translation -c Release` and publish to NuGet (tagged `OrchardCoreCMS` and `Module`, so it is found as an Orchard Core module).
-3. Tag `vX.Y.Z`.
+Releases are published by `.github/workflows/release.yml` when the version is officially bumped; nobody tags or creates releases by hand.
 
+1. Move the *Unreleased* entries in `CHANGELOG.md` under a new `## X.Y.Z — YYYY-MM-DD` section, and keep an empty *Unreleased* above it.
+2. Set the same version in:
+   - `src/Supertext.OrchardCore.Translation/Supertext.OrchardCore.Translation.csproj`: `Version`, the NuGet package version
+   - `src/Supertext.OrchardCore.Translation/Manifest.cs`: the module's `Version`
+3. Push to `main`. The workflow checks that the version files match `CHANGELOG.md`, then tags `vX.Y.Z` and creates the GitHub release with the CHANGELOG section as notes (0.x versions as pre-releases). A push that adds no new version does nothing, and a version that is already released is skipped. After fixing a failed run, start it again with *Run workflow* on the *Release* workflow.
+
+Publishing to NuGet stays manual: `dotnet pack src/Supertext.OrchardCore.Translation -c Release`, then push the package (tagged `OrchardCoreCMS` and `Module`, so it is found as an Orchard Core module).
 ## Known limitations / roadmap
 
 - Translation runs inside the request (up to the timeout per culture). Planned: a background task with progress for very long items and many cultures.
