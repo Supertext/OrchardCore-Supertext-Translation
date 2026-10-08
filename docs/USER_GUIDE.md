@@ -2,6 +2,8 @@
 
 For editors who translate content. Your site has one source language (for example English) and some target languages (for example German, French and Italian). Each language version of a page is its own content item, linked to the others as *localizations*.
 
+The Supertext buttons, the *Translate with Supertext* page and the messages follow the admin's interface language (English, German, French or Italian). The screenshots show the English interface.
+
 ## Translate a page
 
 1. Open **Content → Content Items**. Pages that can be translated have a **Supertext** button (next to *Localizations*). In the editor, the same action is **Translate with Supertext** at the bottom.

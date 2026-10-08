@@ -22,6 +22,7 @@ public sealed class SupertextSettingsDisplayDriver(
     SupertextClient client,
     ILocalizationService localizationService,
     INotifier notifier,
+    SupertextMessages messages,
     IHttpContextAccessor httpContextAccessor,
     IAuthorizationService authorizationService,
     IHtmlLocalizer<SupertextSettingsDisplayDriver> htmlLocalizer,
@@ -133,7 +134,7 @@ public sealed class SupertextSettingsDisplayDriver(
         }
         catch (SupertextException e)
         {
-            await notifier.ErrorAsync(H["The settings were saved, but Supertext could not be reached with them: {0}", e.Message]);
+            await notifier.ErrorAsync(H["The settings were saved, but Supertext could not be reached with them: {0}", messages.Describe(e)]);
         }
     }
 }

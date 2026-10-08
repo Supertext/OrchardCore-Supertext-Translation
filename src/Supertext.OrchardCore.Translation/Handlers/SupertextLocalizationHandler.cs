@@ -20,6 +20,7 @@ public sealed class SupertextLocalizationHandler(
     SupertextConfiguration configuration,
     SupertextScope scope,
     INotifier notifier,
+    SupertextMessages messages,
     IHtmlLocalizer<SupertextLocalizationHandler> htmlLocalizer,
     ILogger<SupertextLocalizationHandler> logger) : ContentLocalizationHandlerBase
 {
@@ -53,7 +54,7 @@ public sealed class SupertextLocalizationHandler(
         catch (SupertextException e)
         {
             logger.LogWarning(e, "Supertext translation of {ContentItemId} into {Culture} failed.", context.Original.ContentItemId, context.Culture);
-            await notifier.WarningAsync(H["The {0} version was created but not translated: {1}", cultureName, e.Message]);
+            await notifier.WarningAsync(H["The {0} version was created but not translated: {1}", cultureName, messages.Describe(e)]);
         }
         catch (Exception e)
         {

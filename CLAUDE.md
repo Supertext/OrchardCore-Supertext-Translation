@@ -23,6 +23,10 @@ Everywhere an administrator enters or is told about the API key — the settings
 
 Wording: "No Supertext account yet? Create one at supertext.com. Generate your API key at supertext.com → Integrations → API (requires the Admin role)." In the UI, links open in a new tab (`target="_blank" rel="noopener"`); where the CMS shows plain text only, use the bare URLs. New screens or messages that mention the key get the links too.
 
+## UI languages (always)
+
+The plugin's own UI (buttons, panels, dialogs, settings, permissions, messages) is available in English, German, French and Italian through the CMS's own translation mechanism, so it follows the user's back-end language. New or changed strings get all four languages in the same commit. Formal address (Sie, vous, Lei), the CMS's own terms in each language, "Supertext", placeholders and URLs never translated.
+
 ## Plugin list (always)
 
 `README.md` ends with the shared list of all Supertext plugins (between the `<!-- supertext-plugins:start -->` and `<!-- supertext-plugins:end -->` markers). It is identical in every Supertext plugin repo: when a plugin is added, renamed or its description changes, update the list in **all** repos, not just this one.
@@ -78,6 +82,7 @@ Lessons from testing against the live API (October 2026), to apply in every plug
 
 - Two entry points share `ContentTranslator`: the hook `SupertextLocalizationHandler` (`IContentLocalizationHandler.LocalizingAsync`, runs inside Orchard's own Localize action) and `Controllers/AdminController` (*Translate with Supertext* page). The page sets `SupertextScope.SuppressAutomaticTranslation` so its localizations aren't translated twice.
 - `ContentWalker` works on plain JSON and is unit-tested; `ContentTranslator` copies the source JSON over the target except `LocalizationPart`, `AutoroutePart`, `AliasPart`, `ContainedPart`, and applies it with `ContentItem.Apply()` so the typed-part cache is cleared (otherwise TitlePart writes back the old title on save). FlowPart's list is `Widgets`, BagPart's is `ContentItems`.
+- UI strings: `T[]`/`S[]`/`H[]` with translations in `src/Supertext.OrchardCore.Translation/Localization/de.po`, `fr.po`, `it.po` (msgctxt = class or view path); errors shown to editors are `SupertextException` templates, localized by `SupertextMessages`. `LocalizationTests` checks them.
 - View models passed to `Initialize<T>()` must not be `sealed` (Orchard creates a proxy).
 - Orchard user names can't contain `@`: the demo uses the e-mail's local part as user name (entrypoint and `DemoSetupEvents.UserNameFor`); people sign in with the e-mail.
 - If a Razor view fails to compile with nonsense positions after edits, `dotnet build-server shutdown` and delete `obj/`.

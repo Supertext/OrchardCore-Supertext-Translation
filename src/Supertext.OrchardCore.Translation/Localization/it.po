@@ -1,0 +1,403 @@
+# Italian translation of the Supertext Translation module for Orchard Core.
+# msgctxt = the class or view that asks for the text (see docs/DEVELOPER.md → UI strings). Checked by LocalizationTests.
+msgid ""
+msgstr ""
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: it\n"
+
+#: AdminMenu.cs
+msgctxt "Supertext.OrchardCore.Translation.AdminMenu"
+msgid "Configuration"
+msgstr "Configurazione"
+
+#: AdminMenu.cs
+msgctxt "Supertext.OrchardCore.Translation.AdminMenu"
+msgid "Settings"
+msgstr "Impostazioni"
+
+#: AdminMenu.cs
+msgctxt "Supertext.OrchardCore.Translation.AdminMenu"
+msgid "Supertext"
+msgstr "Supertext"
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "Choose at least one language."
+msgstr "Scelga almeno una lingua."
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "{0}: you may not edit the existing translation."
+msgstr "{0}: non è autorizzato a modificare la traduzione esistente."
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "{0}: translated as a draft, but {1} text(s) kept the source wording. Please review them."
+msgstr "{0}: tradotto come bozza, ma alcuni testi ({1}) hanno mantenuto la formulazione originale. Li verifichi."
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "{0}: translated as a draft ({1} texts). Review and publish it when it's ready."
+msgstr "{0}: tradotto come bozza ({1} testi). Lo riveda e lo pubblichi quando è pronto."
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "{0}: not translated. {1}"
+msgstr "{0}: non tradotto. {1}"
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "{0}: the localization could not be created."
+msgstr "{0}: non è stato possibile creare la localizzazione."
+
+#: Drivers/SupertextSettingsDisplayDriver.cs
+msgctxt "Supertext.OrchardCore.Translation.Drivers.SupertextSettingsDisplayDriver"
+msgid "The endpoint must be an https URL, e.g. https://api.supertext.com/v1/ (http only for localhost)."
+msgstr "L’endpoint deve essere un URL https, ad es. https://api.supertext.com/v1/ (http solo per localhost)."
+
+#: Drivers/SupertextSettingsDisplayDriver.cs
+msgctxt "Supertext.OrchardCore.Translation.Drivers.SupertextSettingsDisplayDriver"
+msgid "The timeout must be between 30 and 3600 seconds."
+msgstr "Il timeout deve essere compreso tra 30 e 3600 secondi."
+
+#: Drivers/SupertextSettingsDisplayDriver.cs
+msgctxt "Supertext.OrchardCore.Translation.Drivers.SupertextSettingsDisplayDriver"
+msgid "No Supertext API key is set yet, so content can't be translated. Generate one at <a href=\"{0}\" target=\"_blank\" rel=\"noopener\">supertext.com → Integrations → API</a> (requires the Admin role; no account yet? <a href=\"{1}\" target=\"_blank\" rel=\"noopener\">create one</a>)."
+msgstr "Non è ancora impostata alcuna chiave API Supertext, quindi i contenuti non possono essere tradotti. Ne generi una su <a href=\"{0}\" target=\"_blank\" rel=\"noopener\">supertext.com → Integrations → API</a> (richiede il ruolo Admin; non ha ancora un account? <a href=\"{1}\" target=\"_blank\" rel=\"noopener\">Ne crei uno</a>)."
+
+#: Drivers/SupertextSettingsDisplayDriver.cs
+msgctxt "Supertext.OrchardCore.Translation.Drivers.SupertextSettingsDisplayDriver"
+msgid "Connected to Supertext. The API key works."
+msgstr "Connesso a Supertext. La chiave API funziona."
+
+#: Drivers/SupertextSettingsDisplayDriver.cs
+msgctxt "Supertext.OrchardCore.Translation.Drivers.SupertextSettingsDisplayDriver"
+msgid "The settings were saved, but Supertext could not be reached with them: {0}"
+msgstr "Le impostazioni sono state salvate, ma con esse non è stato possibile raggiungere Supertext: {0}"
+
+#: Handlers/SupertextLocalizationHandler.cs
+msgctxt "Supertext.OrchardCore.Translation.Handlers.SupertextLocalizationHandler"
+msgid "Translated into {0} with Supertext. {1} text(s) kept the source wording, please review them."
+msgstr "Tradotto in {0} con Supertext. Alcuni testi ({1}) hanno mantenuto la formulazione originale, li verifichi."
+
+#: Handlers/SupertextLocalizationHandler.cs
+msgctxt "Supertext.OrchardCore.Translation.Handlers.SupertextLocalizationHandler"
+msgid "Translated into {0} with Supertext. Please review the translation before publishing."
+msgstr "Tradotto in {0} con Supertext. Verifichi la traduzione prima di pubblicarla."
+
+#: Handlers/SupertextLocalizationHandler.cs
+msgctxt "Supertext.OrchardCore.Translation.Handlers.SupertextLocalizationHandler"
+msgid "The {0} version was created but not translated: {1}"
+msgstr "La versione {0} è stata creata ma non tradotta: {1}"
+
+#: Handlers/SupertextLocalizationHandler.cs
+msgctxt "Supertext.OrchardCore.Translation.Handlers.SupertextLocalizationHandler"
+msgid "The {0} version was created but not translated because of an unexpected error. Try Translate with Supertext later."
+msgstr "La versione {0} è stata creata ma non tradotta a causa di un errore imprevisto. Riprovi più tardi con «Traduci con Supertext»."
+
+#: Api/SupertextClient.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "Supertext did not return a file id."
+msgstr "Supertext non ha restituito un ID file."
+
+#: Api/SupertextClient.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "Supertext failed to translate the document."
+msgstr "Supertext non è riuscito a tradurre il documento."
+
+#: Api/SupertextClient.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "Your Supertext translation limit is exceeded."
+msgstr "Il Suo limite di traduzione Supertext è stato superato."
+
+#: Api/SupertextClient.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "The Supertext file was deleted before it could be downloaded."
+msgstr "Il file Supertext è stato eliminato prima di poter essere scaricato."
+
+#: Api/SupertextClient.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "Timed out waiting for the Supertext translation."
+msgstr "Tempo scaduto in attesa della traduzione Supertext."
+
+#: Api/SupertextClient.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "The translated document was empty."
+msgstr "Il documento tradotto era vuoto."
+
+#: Api/SupertextClient.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "No Supertext API key configured (Settings → Supertext, or SUPERTEXT_API_KEY). No Supertext account yet? Create one at https://www.supertext.com/person/en/account/signin. Generate your API key at https://www.supertext.com/en/integrations/api (supertext.com → Integrations → API, requires the Admin role)."
+msgstr "Nessuna chiave API Supertext configurata (Impostazioni → Supertext, oppure SUPERTEXT_API_KEY). Non ha ancora un account Supertext? Ne crei uno su https://www.supertext.com/person/en/account/signin. Generi la Sua chiave API su https://www.supertext.com/en/integrations/api (supertext.com → Integrations → API, richiede il ruolo Admin)."
+
+#: Api/SupertextClient.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "Could not reach Supertext."
+msgstr "Impossibile raggiungere Supertext."
+
+#: Api/SupertextClient.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "Authentication failed. Please check the Supertext API key. No Supertext account yet? Create one at https://www.supertext.com/person/en/account/signin. Generate your API key at https://www.supertext.com/en/integrations/api (supertext.com → Integrations → API, requires the Admin role)."
+msgstr "Autenticazione non riuscita. Verifichi la chiave API Supertext. Non ha ancora un account Supertext? Ne crei uno su https://www.supertext.com/person/en/account/signin. Generi la Sua chiave API su https://www.supertext.com/en/integrations/api (supertext.com → Integrations → API, richiede il ruolo Admin)."
+
+#: Api/SupertextClient.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "The requested Supertext resource was not found."
+msgstr "La risorsa Supertext richiesta non è stata trovata."
+
+#: Api/SupertextClient.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "The content is too large for Supertext to translate in one go."
+msgstr "Il contenuto è troppo grande per essere tradotto da Supertext in una sola volta."
+
+#: Api/SupertextClient.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "Too many requests to Supertext. Please try again shortly."
+msgstr "Troppe richieste a Supertext. Riprovi tra poco."
+
+#: Api/SupertextClient.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "The Supertext service is currently unavailable."
+msgstr "Il servizio Supertext non è al momento disponibile."
+
+#: Api/SupertextClient.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "Supertext answered with HTTP {0}."
+msgstr "Supertext ha risposto con HTTP {0}."
+
+#: Services/ContentTranslator.cs
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "No Supertext API key configured. An administrator can add it under Settings → Supertext."
+msgstr "Nessuna chiave API Supertext configurata. Un amministratore può aggiungerla in Impostazioni → Supertext."
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Translate with Supertext"
+msgstr "Traduci con Supertext"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "{0} · source language: {1} ({2})"
+msgstr "{0} · lingua di origine: {1} ({2})"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "No Supertext API key is configured. An administrator can add it under Settings → Supertext."
+msgstr "Non è configurata alcuna chiave API Supertext. Un amministratore può aggiungerla in Impostazioni → Supertext."
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "This item has an unpublished draft. The draft (the latest saved version) is translated."
+msgstr "Questo elemento ha una bozza non pubblicata. Viene tradotta la bozza (l’ultima versione salvata)."
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "The site has only one culture. Add cultures under Settings → Localization → Cultures."
+msgstr "Il sito ha una sola lingua. Aggiunga altre lingue in Impostazioni → Traduzione → Lingue."
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Language"
+msgstr "Lingua"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Status"
+msgstr "Stato"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Not translated yet"
+msgstr "Non ancora tradotto"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Published"
+msgstr "Pubblicato"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Draft"
+msgstr "Bozza"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Some of the selected languages already have a translation."
+msgstr "Alcune delle lingue selezionate hanno già una traduzione."
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Translating again replaces their texts with a new translation of the source, including any changes made by hand. Their URL and culture stay as they are; the result is saved as a draft."
+msgstr "Una nuova traduzione sostituisce i loro testi con una nuova traduzione dell’originale, comprese le modifiche fatte a mano. URL e lingua restano invariati; il risultato viene salvato come bozza."
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Yes, overwrite the existing translations"
+msgstr "Sì, sovrascrivi le traduzioni esistenti"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Languages are translated one after the other and saved as drafts. This can take a minute for long pages."
+msgstr "Le lingue vengono tradotte una dopo l’altra e salvate come bozze. Per pagine lunghe può richiedere un minuto."
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Translate"
+msgstr "Traduci"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Back"
+msgstr "Indietro"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Back to the item"
+msgstr "Torna all’elemento"
+
+#: Views/SupertextButton_Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextButton_Edit"
+msgid "Translates the saved version. Save your changes first."
+msgstr "Traduce la versione salvata. Salvi prima le Sue modifiche."
+
+#: Views/SupertextButton_Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextButton_Edit"
+msgid "Translate with Supertext"
+msgstr "Traduci con Supertext"
+
+#: Views/SupertextButton_SummaryAdmin.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextButton_SummaryAdmin"
+msgid "Translate with Supertext"
+msgstr "Traduci con Supertext"
+
+#: Views/SupertextButton_SummaryAdmin.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextButton_SummaryAdmin"
+msgid "Supertext"
+msgstr "Supertext"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "A key is stored. Leave empty to keep it."
+msgstr "Una chiave è salvata. Lasci vuoto per mantenerla."
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Paste your Supertext API key"
+msgstr "Incolli la Sua chiave API Supertext"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "It may include the Supertext-Auth-Key prefix. The key is stored encrypted and checked when you save."
+msgstr "Può includere il prefisso Supertext-Auth-Key. La chiave viene salvata in forma crittografata e verificata al salvataggio."
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Formal (e.g. German Sie)"
+msgstr "Formale (ad es. Lei)"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Informal (e.g. German du)"
+msgstr "Informale (ad es. tu)"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "When an editor creates a culture version from the Localizations menu, the copy is translated with Supertext before the editor opens it. Translate with Supertext works either way."
+msgstr "Quando un redattore crea una versione in un’altra lingua dal menu Localizzazioni, la copia viene tradotta con Supertext prima che la apra. «Traduci con Supertext» funziona in entrambi i casi."
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Connection"
+msgstr "Connessione"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "API key"
+msgstr "Chiave API"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "The API key comes from the SUPERTEXT_API_KEY environment variable (or the Supertext:ApiKey configuration) and overrides the one stored here."
+msgstr "La chiave API proviene dalla variabile d’ambiente SUPERTEXT_API_KEY (o dalla configurazione Supertext:ApiKey) e ha la precedenza su quella salvata qui."
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "No Supertext account yet? <a href=\"{0}\" target=\"_blank\" rel=\"noopener\">Create one at supertext.com</a>. Generate your API key at <a href=\"{1}\" target=\"_blank\" rel=\"noopener\">supertext.com → Integrations → API</a> (requires the Admin role)."
+msgstr "Non ha ancora un account Supertext? <a href=\"{0}\" target=\"_blank\" rel=\"noopener\">Ne crei uno su supertext.com</a>. Generi la Sua chiave API su <a href=\"{1}\" target=\"_blank\" rel=\"noopener\">supertext.com → Integrations → API</a> (richiede il ruolo Admin)."
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Remove the stored API key"
+msgstr "Rimuovi la chiave API salvata"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "API endpoint"
+msgstr "Endpoint API"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Leave empty to use {0}."
+msgstr "Lasci vuoto per usare {0}."
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Set by SUPERTEXT_API_ENDPOINT: {0}"
+msgstr "Impostato da SUPERTEXT_API_ENDPOINT: {0}"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Translation"
+msgstr "Traduzione"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Translate new localizations automatically"
+msgstr "Traduci automaticamente le nuove localizzazioni"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Form of address"
+msgstr "Forma di cortesia"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "As in the source"
+msgstr "Come nell’originale"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Language codes"
+msgstr "Codici lingua"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "One culture=code per line, if Supertext should get a different language code than the culture's name. Cultures of this site: {0}."
+msgstr "Una riga lingua=codice per lingua, se Supertext deve ricevere un codice lingua diverso dal nome della lingua. Lingue di questo sito: {0}."
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Fields not to translate"
+msgstr "Campi da non tradurre"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "One per line: Part.Field (e.g. Article.Subtitle), a part (e.g. HtmlBodyPart) or ContentType.Part.Field. Excluded fields keep the source text."
+msgstr "Uno per riga: Part.Field (ad es. Article.Subtitle), una parte (ad es. HtmlBodyPart) o ContentType.Part.Field. I campi esclusi mantengono il testo originale."
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Timeout per language (seconds)"
+msgstr "Timeout per lingua (secondi)"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Module version: <a href=\"{0}\" target=\"_blank\" rel=\"noopener\">{1}</a>"
+msgstr "Versione del modulo: <a href=\"{0}\" target=\"_blank\" rel=\"noopener\">{1}</a>"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Module version: {0}"
+msgstr "Versione del modulo: {0}"

@@ -5,7 +5,28 @@ using System.Text.RegularExpressions;
 
 namespace Supertext.OrchardCore.Translation.Api;
 
-public sealed class SupertextException(string message, Exception inner = null) : Exception(message, inner);
+/// <summary>
+/// An error shown to editors. <see cref="Template"/> is the English text with <c>{0}</c>
+/// placeholders for <see cref="Args"/>; <c>SupertextMessages</c> shows it in the user's admin
+/// language (msgids of <c>Localization/*.po</c>). <see cref="Exception.Message"/> is the
+/// English text with the arguments and the untranslated <see cref="Detail"/> from Supertext (logs).
+/// </summary>
+public sealed class SupertextException(string template, object[] args = null, string detail = null, Exception inner = null)
+    : Exception(Format(template, args, detail), inner)
+{
+    public string Template { get; } = template;
+
+    public object[] Args { get; } = args ?? [];
+
+    /// <summary>Text returned by Supertext or the network stack (not translated).</summary>
+    public string Detail { get; } = string.IsNullOrEmpty(detail) ? null : detail;
+
+    private static string Format(string template, object[] args, string detail)
+    {
+        var text = args is { Length: > 0 } ? string.Format(System.Globalization.CultureInfo.InvariantCulture, template, args) : template;
+        return string.IsNullOrEmpty(detail) ? text : text + " (" + detail + ")";
+    }
+}
 
 /// <summary>Where and how to reach Supertext (resolved from site settings and environment).</summary>
 public sealed record SupertextConnection(string Endpoint, string ApiKey, int PollIntervalSeconds = 2, int PollTimeoutSeconds = 300);
@@ -148,7 +169,7 @@ public sealed partial class SupertextClient(HttpClient http)
         var apiKey = NormalizeApiKey(connection.ApiKey);
         if (apiKey == string.Empty)
         {
-            throw new SupertextException("No Supertext API key configured (Settings → Supertext, or SUPERTEXT_API_KEY).");
+            throw new SupertextException("No Supertext API key configured (Settings → Supertext, or SUPERTEXT_API_KEY). No Supertext account yet? Create one at https://www.supertext.com/person/en/account/signin. Generate your API key at https://www.supertext.com/en/integrations/api (supertext.com → Integrations → API, requires the Admin role).");
         }
         var endpoint = string.IsNullOrWhiteSpace(connection.Endpoint) ? DefaultEndpoint : connection.Endpoint.Trim();
         var baseUri = new Uri(endpoint.EndsWith('/') ? endpoint : endpoint + "/");
@@ -167,7 +188,7 @@ public sealed partial class SupertextClient(HttpClient http)
             }
             catch (Exception e) when (e is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
             {
-                throw new SupertextException("Could not reach Supertext: " + e.Message, e);
+                throw new SupertextException("Could not reach Supertext.", detail: e.Message, inner: e);
             }
             if (response.StatusCode != HttpStatusCode.TooManyRequests || attempt >= RateLimitRetries)
             {
@@ -187,20 +208,16 @@ public sealed partial class SupertextClient(HttpClient http)
         }
         var message = code switch
         {
-            401 or 403 => "Authentication failed. Please check the Supertext API key.",
+            401 or 403 => "Authentication failed. Please check the Supertext API key. No Supertext account yet? Create one at https://www.supertext.com/person/en/account/signin. Generate your API key at https://www.supertext.com/en/integrations/api (supertext.com → Integrations → API, requires the Admin role).",
             404 => "The requested Supertext resource was not found.",
             413 => "The content is too large for Supertext to translate in one go.",
             429 => "Too many requests to Supertext. Please try again shortly.",
             >= 500 => "The Supertext service is currently unavailable.",
-            _ => $"Supertext answered with HTTP {code}.",
+            _ => "Supertext answered with HTTP {0}.",
         };
         var detail = Tags().Replace(await response.Content.ReadAsStringAsync(ct), string.Empty).Trim();
         response.Dispose();
-        if (detail != string.Empty)
-        {
-            message += " (" + (detail.Length > 200 ? detail[..200] : detail) + ")";
-        }
-        throw new SupertextException(message);
+        throw new SupertextException(message, [code], detail.Length > 200 ? detail[..200] : detail);
     }
 
     private static async Task<JsonElement> ReadJsonAsync(HttpResponseMessage response, CancellationToken ct)

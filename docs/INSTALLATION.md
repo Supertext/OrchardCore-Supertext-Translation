@@ -82,6 +82,10 @@ A URL per language comes from the type's Autoroute pattern. To give each culture
 
 Translated items get their URL from the translated title when they are saved.
 
+## Interface languages
+
+The module's own screens (the *Supertext* buttons, the *Translate with Supertext* page, **Settings → Supertext**, the admin menu entry, notifications and error messages) are in English, German, French and Italian. They follow the admin's interface language, which Orchard Core takes from the site's supported cultures: the browser's preferred language, the language chosen with the **Admin Culture Picker** feature (a picker in the admin top bar), or the user's own culture with the **User Localization** feature. A regional culture (`de-CH`, `fr-CH`, `it-CH`) uses its language's texts; other languages fall back to English. Orchard Core shows permission names on the *Roles* page in English for every module, so *Translate content with Supertext* and *Manage Supertext settings* stay English there.
+
 ## Permissions
 
 | Permission | Default roles | Allows |

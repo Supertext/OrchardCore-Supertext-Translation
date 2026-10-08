@@ -20,6 +20,7 @@ public sealed class Startup : StartupBase
         services.AddScoped<SupertextConfiguration>();
         services.AddScoped<SupertextScope>();
         services.AddScoped<ContentTranslator>();
+        services.AddScoped<SupertextMessages>();
         services.AddScoped<IContentLocalizationHandler, SupertextLocalizationHandler>();
 
         services.AddSiteDisplayDriver<SupertextSettingsDisplayDriver>();

@@ -29,6 +29,8 @@ Orchard Core "Localizations → + culture" (ContentLocalization AdminController.
 | `Controllers/AdminController` | The *Translate with Supertext* page. Requires `TranslateWithSupertext`, `LocalizeContent` and `EditContent` on the source, and `EditContent` on an existing target. Overwriting needs `confirmOverwrite`. Translates first, creates/loads the target only on success, so a failure leaves nothing behind. |
 | `Drivers/SupertextContentDisplayDriver` | Button shapes: `SupertextButton_SummaryAdmin` (`Actions:6`, next to *Localizations*) and `SupertextButton_Edit` (`Actions:35`). Only for saved items with a `LocalizationPart`. |
 | `Drivers/SupertextSettingsDisplayDriver` | Settings group `supertext`; validates endpoint (https, or http to loopback) and timeout (30–3600 s); keeps the stored endpoint while `SUPERTEXT_API_ENDPOINT` is set; checks the key with `GET features` after saving. |
+| `Services/SupertextMessages` | Shows a `SupertextException` in the admin's language: the exception's English `Template` is the msgid (context `…Services.SupertextMessages`), `Args` fill its placeholders, the untranslated `Detail` from Supertext is appended. `Message` stays English (logs). |
+| `Localization/de.po`, `fr.po`, `it.po` | UI strings; see *UI strings* below. |
 | `Permissions.cs` | `TranslateWithSupertext` (Administrator, Editor stereotypes), `ManageSupertextSettings` (Administrator). |
 
 **What is translated** (by part/field type name): `TitlePart.Title`, `HtmlBodyPart.Html` (HTML), `MarkdownBodyPart.Markdown` (text), `TextField.Text` for the editors *Standard* (empty), *TextArea* and *Header*, `HtmlField.Html` except the *Monaco* editor, `MarkdownField.Markdown`, `LinkField.Text`, `MediaField.MediaTexts[]`. Values without words (URLs, e-mails, paths, numbers, anchors) are skipped (`ContentWalker.ShouldTranslate`).
@@ -36,6 +38,15 @@ Orchard Core "Localizations → + culture" (ContentLocalization AdminController.
 **Why `Apply()`**: Orchard caches typed parts (e.g. `TitlePart`) per item. Writing JSON directly leaves stale typed parts, and `TitlePartHandler` would write the old title back on save. `ContentItem.Apply(replacement)` merges the JSON (arrays replaced) and clears the cache.
 
 **Draft handling**: the Translate page translates the latest version (a draft if there is one). Existing targets get a new draft (`VersionOptions.DraftRequired`), so their published version stays online. Autoroute regenerates an empty path on `UpdateAsync`, so new localizations get a URL from the translated title.
+
+### UI strings
+
+All UI text goes through Orchard Core's localization: `T["…"]` in views, `S["…"]` (`IStringLocalizer<T>`) and `H["…"]` (`IHtmlLocalizer<T>`, notifications) in classes, and `SupertextException` messages through `SupertextMessages`. The translations are `Localization/de.po`, `fr.po` and `it.po` in the module: Orchard Core's `ModularPoFileLocationProvider` reads `Localization/<culture>.po` from each module (here embedded in the assembly by `OrchardCore.Module.Targets`), and `de-CH` falls back to `de`. English is the msgid itself.
+
+- `msgctxt` is the class (`Supertext.OrchardCore.Translation.Controllers.AdminController`) or the view path (`Supertext.OrchardCore.Translation.Views.Admin.Translate`) that asks for the text; the same English text in two places needs two entries.
+- **New or changed strings need all three .po files** in the same commit (English is the source): formal address (Sie, vous, Lei), Orchard Core's own terms in each language (from `OrchardCore.Translations.*`: *Entwurf*/*Brouillon*/*Bozza*, *Lokalisierungen*/*Localisations*/*Localizzazioni*, menu paths as the admin shows them), "Supertext", placeholders, HTML and URLs untranslated, a non-breaking space before French `?`, `!`, `:`, `;`.
+- `LocalizationTests` fails when a text the code uses has no translation in a language, a .po file has entries no code uses, or a translation changes placeholders, tags or URLs.
+- Permission descriptions are not localized: Orchard Core's *Roles* page shows them as registered.
 
 ## Supertext API protocol
 
@@ -71,7 +82,7 @@ If a Razor view suddenly fails with errors at impossible positions after editing
 ## Tests
 
 ```bash
-dotnet test tests/Supertext.OrchardCore.Translation.Tests   # HTML packing, Liquid protection, content walker, settings parsing, module version
+dotnet test tests/Supertext.OrchardCore.Translation.Tests   # HTML packing, Liquid protection, content walker, settings parsing, module version, UI strings in de/fr/it
 ```
 
 CI (`.github/workflows/ci.yml`) builds the module and the demo, runs the tests, checks the demo entrypoint and the Node scripts' syntax.
@@ -150,5 +161,6 @@ Publishing to NuGet stays manual: `dotnet pack src/Supertext.OrchardCore.Transla
 - Markdown is sent as plain text: syntax usually survives, but isn't protected.
 - Shortcodes (`[image]…`) in HTML are sent as text; only Liquid is protected.
 - Taxonomies, tags, menus, content pickers and media files are not translated; custom part properties (not fields) of third-party parts are not translated.
+- Permission names on the *Roles* page stay English (Orchard Core doesn't localize permission descriptions).
 - Human (professional) translation orders are not supported yet.
 - Tested on Orchard Core 3.0.1 with the stand-in API; not yet against the live API.

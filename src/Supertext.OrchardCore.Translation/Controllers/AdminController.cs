@@ -30,6 +30,7 @@ public sealed class AdminController(
     SupertextConfiguration configuration,
     SupertextScope scope,
     INotifier notifier,
+    SupertextMessages messages,
     IHtmlLocalizer<AdminController> htmlLocalizer,
     ILogger<AdminController> logger) : Controller
 {
@@ -119,7 +120,7 @@ public sealed class AdminController(
             catch (SupertextException e)
             {
                 logger.LogWarning(e, "Supertext translation of {ContentItemId} into {Culture} failed.", source.ContentItemId, target.Culture);
-                await notifier.ErrorAsync(H["{0}: not translated. {1}", target.CultureName, e.Message]);
+                await notifier.ErrorAsync(H["{0}: not translated. {1}", target.CultureName, messages.Describe(e)]);
             }
             catch (InvalidOperationException e)
             {
