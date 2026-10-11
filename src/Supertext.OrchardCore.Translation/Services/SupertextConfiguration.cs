@@ -58,8 +58,15 @@ public sealed class SupertextConfiguration(
         }
     }
 
-    /// <summary>The language code sent to Supertext for an Orchard Core culture.</summary>
+    /// <summary>The target code sent to Supertext for an Orchard Core culture: the mapping, else the culture; with a region (de → de-DE).</summary>
     public static string TargetLanguageCode(SupertextSettings settings, string culture)
+        => LanguageCodes.Target(culture, MappedCode(settings, culture));
+
+    /// <summary>The source code sent to Supertext for an Orchard Core culture: the bare language of the mapping, else of the culture (en-US → en).</summary>
+    public static string SourceLanguageCode(SupertextSettings settings, string culture)
+        => LanguageCodes.Source(culture, MappedCode(settings, culture));
+
+    private static string MappedCode(SupertextSettings settings, string culture)
     {
         foreach (var line in (settings.LanguageMapping ?? string.Empty).Split('\n'))
         {
@@ -69,7 +76,7 @@ public sealed class SupertextConfiguration(
                 return pair[1].Trim();
             }
         }
-        return culture;
+        return null;
     }
 
     public static IEnumerable<string> ExcludedFields(SupertextSettings settings)

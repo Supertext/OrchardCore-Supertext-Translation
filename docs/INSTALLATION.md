@@ -72,7 +72,7 @@ Translations go from an item's culture into the other cultures of the site. Set 
 
 Then make the content types you want to translate localizable: open the type on the **Content Types** page (`/Admin/ContentTypes/List`), click **Add Parts** and add **Localization**. Only types with the *Localization* part show the Supertext buttons.
 
-The culture name is sent to Supertext as the target language (`de-CH`, `fr`, `it-CH` …) and the source culture as its language part (`en-US` → `en`). If Supertext needs a different code, map it under **Language codes** (see below).
+The culture name is sent to Supertext as the target language (`de-CH`, `it-CH` …) and the source culture as its language part (`en-US` → `en`). Supertext needs a region for the target, so a culture without one gets a default region: `de` → `de-DE`, `fr` → `fr-FR`, `it` → `it-IT`, `en` → `en-US` (and so on for other languages). If Supertext should get a different code (e.g. Swiss German for a `de` site), map it under **Language codes** (see below); the mapping wins, and for the source culture its language part is sent.
 
 A URL per language comes from the type's Autoroute pattern. To give each culture its own prefix, use for example:
 
@@ -103,7 +103,7 @@ Grant them on the **Roles** page (`/Admin/Roles/Index`).
 | API endpoint | `https://api.supertext.com/v1/` | Change only for testing. Must be `https` (plain `http` only to `localhost`), because the API key travels with every request. Read-only while `SUPERTEXT_API_ENDPOINT` is set. |
 | Translate new localizations automatically | on | When an editor creates a culture version with Orchard Core's *Localizations* menu, the copy is translated before the editor opens it. Off: the copy stays in the source language; *Translate with Supertext* still works. |
 | Form of address | As in the source | *Formal* or *Informal* for languages that distinguish them (German *Sie*/*du*, French *vous*/*tu* …). |
-| Language codes | – | One `culture=code` per line, e.g. `de=de-CH` if your site uses `de` but you want Swiss German. |
+| Language codes | – | One `culture=code` per line, e.g. `de=de-CH` if your site uses `de` but you want Swiss German. Without a mapping, a culture without region gets a default one (`de` → `de-DE`). |
 | Fields not to translate | – | One per line (or separated by commas): `Part.Field` (e.g. `Article.Subtitle`), a whole part (e.g. `HtmlBodyPart`) or `ContentType.Part.Field`. These keep the source text. |
 | Timeout per language | 300 s | How long to wait for Supertext per language before giving up (30–3600 s). |
 

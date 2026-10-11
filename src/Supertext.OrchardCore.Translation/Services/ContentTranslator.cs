@@ -62,11 +62,12 @@ public sealed class ContentTranslator(
         var segments = await walker.CollectAsync(data, source.ContentType);
         var untranslated = 0;
         var targetCode = SupertextConfiguration.TargetLanguageCode(settings, targetCulture);
+        var sourceCode = SupertextConfiguration.SourceLanguageCode(settings, sourceCulture);
 
         foreach (var chunk in Chunk(segments))
         {
             var html = HtmlDocument.Build(chunk.Select(s => s.Segment).ToList());
-            var translated = await client.TranslateDocumentAsync(connection, html, targetCode, sourceCulture, settings.Politeness, ct);
+            var translated = await client.TranslateDocumentAsync(connection, html, targetCode, sourceCode, settings.Politeness, ct);
             var parsed = HtmlDocument.Parse(translated, chunk.Select(s => s.Segment).ToList());
             for (var i = 0; i < chunk.Count; i++)
             {

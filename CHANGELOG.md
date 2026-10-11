@@ -9,6 +9,10 @@ All notable changes to this project are documented here. The format follows [Kee
 - French and Italian interface (and German where it was missing): buttons, the Translate with Supertext page, Settings → Supertext, notifications and Supertext error messages follow the admin's interface language (`Localization/de.po`, `fr.po`, `it.po`). The "Authentication failed" and missing-key errors now also link to Supertext account signup and API key generation.
 - Settings → Supertext shows the installed module version, linked to its GitHub release notes.
 
+### Fixed
+
+- Cultures without a region (e.g. `de`, `fr`) are now sent to Supertext as `de-DE`, `fr-FR` (Supertext rejects targets without region); **Language codes** mappings are normalized (`de_ch` → `de-CH`) and, for the source culture, sent without region.
+
 ## 0.1.0 — 2026-10-07
 
 ### Added
