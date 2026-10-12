@@ -1,0 +1,3 @@
+# This repo's own files, linked absolutely from README.md so the links also work where the README is shown outside GitHub.
+# GitHub answers CI's requests for them with 503 (rate limiting); the files are in the repo, so there is nothing to check.
+^https://github\.com/Supertext/OrchardCore-Supertext-Translation/blob/main/
