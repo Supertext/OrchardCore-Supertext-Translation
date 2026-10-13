@@ -24,6 +24,7 @@ public class LanguageCodesTests
     [Theory]
     [InlineData("de-CH", "de-CH")]
     [InlineData("de_ch", "de-CH")]
+    [InlineData("de_DE_formal", "de-DE")]
     [InlineData("fr-ch", "fr-CH")]
     [InlineData("zh-hant", "zh-Hant")]
     [InlineData("es-419", "es-419")]

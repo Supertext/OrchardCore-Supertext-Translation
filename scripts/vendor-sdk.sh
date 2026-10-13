@@ -20,6 +20,11 @@ else
     SRC="$TMP/sdk"
 fi
 COMMIT="$(git -C "$SRC" rev-parse HEAD)"
+VERSION="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$SRC/sdk/dotnet/src/Supertext.Sdk/Supertext.Sdk.csproj" | head -n 1)"
+if [ -z "$VERSION" ]; then
+    echo "vendor-sdk: no <Version> in sdk/dotnet/src/Supertext.Sdk/Supertext.Sdk.csproj" >&2
+    exit 1
+fi
 
 DEST="$ROOT/lib/supertext-sdk"
 rm -rf "$DEST"
@@ -28,11 +33,12 @@ cp "$SRC"/sdk/dotnet/src/Supertext.Sdk/*.cs "$DEST/src/"
 cp "$SRC/LICENSE" "$DEST/LICENSE"
 find "$DEST/src" -name '*.cs' -exec sed -i 's/\bSupertext\.Sdk\b/Supertext.OrchardCore.Translation.Sdk/g' {} +
 printf '%s\n' "$COMMIT" > "$DEST/COMMIT"
+printf '%s\n' "$VERSION" > "$DEST/VERSION"
 cat > "$DEST/README.md" <<EOT
 # Supertext SDK (bundled copy)
 
 .NET part of the [Supertext SDK](https://github.com/Supertext/Supertext-API-SDK-and-Guide),
-commit \`$COMMIT\`, namespace \`Supertext.OrchardCore.Translation.Sdk\` instead of \`Supertext.Sdk\`.
+version $VERSION, commit \`$COMMIT\`, namespace \`Supertext.OrchardCore.Translation.Sdk\` instead of \`Supertext.Sdk\`.
 Compiled into Supertext.OrchardCore.Translation.dll (see the package's \`.csproj\`).
 
 Don't edit these files: fix the SDK in its own repository, then run \`scripts/vendor-sdk.sh\`.
@@ -41,4 +47,4 @@ if grep -rqE 'Supertext\.Sdk([^.A-Za-z]|$)' "$DEST/src"; then
     echo "vendor-sdk: unprefixed Supertext.Sdk reference left in $DEST/src" >&2
     exit 1
 fi
-echo "lib/supertext-sdk: Supertext SDK (.NET) from commit $COMMIT"
+echo "lib/supertext-sdk: Supertext SDK (.NET) $VERSION from commit $COMMIT"

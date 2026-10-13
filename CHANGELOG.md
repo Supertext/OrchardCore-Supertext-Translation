@@ -17,6 +17,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ### Fixed
 
 - Cultures without a region (e.g. `de`, `fr`) are now sent to Supertext as `de-DE`, `fr-FR` (Supertext rejects targets without region); **Language codes** mappings are normalized (`de_ch` → `de-CH`) and, for the source culture, sent without region.
+- Locale variants such as `de_DE_formal` (in the **Language codes** mapping) are sent to Supertext as `de-DE`.
 
 ## 0.1.0 — 2026-10-07
 
