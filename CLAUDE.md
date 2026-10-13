@@ -86,6 +86,7 @@ Lessons from testing against the live API (October 2026), to apply in every plug
 
 ## Orchard Core specifics
 
+- Supertext API calls go through the bundled SDK in `lib/supertext-sdk/` (namespace `Supertext.OrchardCore.Translation.Sdk`, compiled into the module). Never edit it: fix the SDK in Supertext-API-SDK-and-Guide, then `scripts/vendor-sdk.sh`. Every SDK error code needs an arm in `Api/SupertextClient.FromSdk` and its `.po` entries.
 - Two entry points share `ContentTranslator`: the hook `SupertextLocalizationHandler` (`IContentLocalizationHandler.LocalizingAsync`, runs inside Orchard's own Localize action) and `Controllers/AdminController` (*Translate with Supertext* page). The page sets `SupertextScope.SuppressAutomaticTranslation` so its localizations aren't translated twice.
 - `ContentWalker` works on plain JSON and is unit-tested; `ContentTranslator` copies the source JSON over the target except `LocalizationPart`, `AutoroutePart`, `AliasPart`, `ContainedPart`, and applies it with `ContentItem.Apply()` so the typed-part cache is cleared (otherwise TitlePart writes back the old title on save). FlowPart's list is `Widgets`, BagPart's is `ContentItems`.
 - UI strings: `T[]`/`S[]`/`H[]` with translations in `src/Supertext.OrchardCore.Translation/Localization/de.po`, `fr.po`, `it.po` (msgctxt = class or view path); errors shown to editors are `SupertextException` templates, localized by `SupertextMessages`. `LocalizationTests` checks them.

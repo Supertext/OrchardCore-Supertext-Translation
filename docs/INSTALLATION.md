@@ -114,6 +114,7 @@ Grant them on the **Roles** page (`/Admin/Roles/Index`).
 | *No Supertext API key is configured* / *No Supertext API key is set yet* | Add the key under **Settings → Supertext**, or set `SUPERTEXT_API_KEY`. Generate one at [supertext.com → Integrations → API](https://www.supertext.com/en/integrations/api) (Admin role). |
 | *Authentication failed. Please check the Supertext API key.* | The key is wrong or revoked. Paste it again, or generate a new one at [supertext.com → Integrations → API](https://www.supertext.com/en/integrations/api). |
 | *The stored Supertext API key could not be decrypted* (log) | The data protection keys changed (e.g. a new container without `App_Data`). Enter the key again, and keep `App_Data` on persistent storage. |
+| *Supertext does not support this language pair (en → xx-YY)* | The culture (or its Supertext language code under Settings → Supertext) isn't one Supertext offers. Set a code such as `de-CH` or `fr`; the message shows the codes that were sent. |
 | *Too many requests to Supertext* | The module already retries rate limits 4 times; try again in a minute. |
 | *Timed out waiting for the Supertext translation* | Very long items: raise the timeout. |
 | *Your Supertext translation limit is exceeded* | Contact Supertext about your plan. |

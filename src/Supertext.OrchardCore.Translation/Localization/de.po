@@ -144,6 +144,10 @@ msgstr "Authentifizierung fehlgeschlagen. Bitte prüfen Sie den Supertext-API-Sc
 
 #: Api/SupertextClient.cs
 msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
+msgid "Supertext does not support this language pair ({0} → {1}). Check the language codes under Settings → Supertext."
+msgstr "Supertext unterstützt dieses Sprachpaar nicht ({0} → {1}). Prüfen Sie die Sprachcodes unter Einstellungen → Supertext."
+
+msgctxt "Supertext.OrchardCore.Translation.Services.SupertextMessages"
 msgid "The requested Supertext resource was not found."
 msgstr "Die angeforderte Supertext-Ressource wurde nicht gefunden."
 

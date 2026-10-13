@@ -7,6 +7,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY src/ src/
+COPY lib/ lib/
 COPY demo/SupertextDemo/ demo/SupertextDemo/
 RUN dotnet publish demo/SupertextDemo/SupertextDemo.csproj -c Release -o /app -p:UseAppHost=false
 

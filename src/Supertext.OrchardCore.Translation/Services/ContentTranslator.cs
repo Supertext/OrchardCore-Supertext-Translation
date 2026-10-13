@@ -64,22 +64,17 @@ public sealed class ContentTranslator(
         var targetCode = SupertextConfiguration.TargetLanguageCode(settings, targetCulture);
         var sourceCode = SupertextConfiguration.SourceLanguageCode(settings, sourceCulture);
 
-        foreach (var chunk in Chunk(segments))
+        var translations = await client.TranslateSegmentsAsync(connection, segments.Select(s => s.Segment).ToList(), targetCode, sourceCode, settings.Politeness, ct);
+        for (var i = 0; i < segments.Count; i++)
         {
-            var html = HtmlDocument.Build(chunk.Select(s => s.Segment).ToList());
-            var translated = await client.TranslateDocumentAsync(connection, html, targetCode, sourceCode, settings.Politeness, ct);
-            var parsed = HtmlDocument.Parse(translated, chunk.Select(s => s.Segment).ToList());
-            for (var i = 0; i < chunk.Count; i++)
+            if (translations.TryGetValue(i, out var text) && !string.IsNullOrWhiteSpace(text))
             {
-                if (parsed.TryGetValue(i, out var text) && !string.IsNullOrWhiteSpace(text))
-                {
-                    chunk[i].Apply(text);
-                }
-                else
-                {
-                    untranslated++;
-                    logger.LogWarning("Supertext returned no usable translation for {Path} ({Culture}); the source text was kept.", chunk[i].Path, targetCulture);
-                }
+                segments[i].Apply(text);
+            }
+            else
+            {
+                untranslated++;
+                logger.LogWarning("Supertext returned no usable translation for {Path} ({Culture}); the source text was kept.", segments[i].Path, targetCulture);
             }
         }
 
@@ -106,30 +101,6 @@ public sealed class ContentTranslator(
     }
 
     private static JsonObject Data(ContentItem item) => (JsonDynamicObject)item.Content;
-
-    private static List<List<PendingSegment>> Chunk(List<PendingSegment> segments)
-    {
-        var chunks = new List<List<PendingSegment>>();
-        var current = new List<PendingSegment>();
-        var size = 0;
-        foreach (var segment in segments)
-        {
-            var length = HtmlDocument.MeasureSegment(segment.Segment);
-            if (current.Count > 0 && size + length > SupertextClient.MaxDocumentCharacters)
-            {
-                chunks.Add(current);
-                current = [];
-                size = 0;
-            }
-            current.Add(segment);
-            size += length;
-        }
-        if (current.Count > 0)
-        {
-            chunks.Add(current);
-        }
-        return chunks;
-    }
 
     private async Task<IReadOnlyList<PartSchema>> ResolveTypeAsync(string contentType)
     {

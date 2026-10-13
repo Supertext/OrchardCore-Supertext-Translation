@@ -6,8 +6,13 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- Its own message for an unsupported language pair, naming the codes ("Supertext does not support this language pair (en → xx-YY)"), in English, German, French and Italian.
 - French and Italian interface (and German where it was missing): buttons, the Translate with Supertext page, Settings → Supertext, notifications and Supertext error messages follow the admin's interface language (`Localization/de.po`, `fr.po`, `it.po`). The "Authentication failed" and missing-key errors now also link to Supertext account signup and API key generation.
 - Settings → Supertext shows the installed module version, linked to its GitHub release notes.
+
+### Changed
+
+- All Supertext API calls now go through the official Supertext .NET SDK, compiled into the module (nothing extra to install). The HtmlAgilityPack dependency is gone.
 
 ### Fixed
 

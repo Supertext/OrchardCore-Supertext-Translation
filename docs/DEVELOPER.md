@@ -20,8 +20,9 @@ Orchard Core "Localizations → + culture" (ContentLocalization AdminController.
 | Part | Role |
 | --- | --- |
 | `Manifest.cs`, `Startup.cs` | Module *Supertext Translation* (feature id `Supertext.OrchardCore.Translation`), depends on `OrchardCore.ContentLocalization` and `OrchardCore.Settings`. Registers the typed `HttpClient`, services, drivers, menu, permissions. |
-| `Api/SupertextClient` | HTTP protocol (below): multipart upload with quoted part names, polling, download, delete; 429 retries; prefix-tolerant key. Stateless: each call takes a `SupertextConnection`. |
-| `Api/HtmlDocument` | Packs segments into one HTML document (`<div data-st-id="N">`) and back. Plain text is HTML-encoded (line breaks as `<br>`); HTML fields go as they are, **one segment per field**. Liquid (`{{ }}`, `{% %}`) is swapped for `<span data-st-keep="N"></span>` and restored; if a placeholder is lost, that field keeps the source. |
+| `Api/SupertextClient` | Wrapper around the bundled Supertext SDK (`lib/supertext-sdk`, see *Supertext SDK*): the protocol below, 429 retries, prefix-tolerant key, segments packed into documents below the size limit; SDK error codes become `SupertextException` templates. Stateless: each call takes a `SupertextConnection`. |
+| `Sdk/…` (`lib/supertext-sdk/src`) | Bundled copy of the Supertext .NET SDK, namespace `Supertext.OrchardCore.Translation.Sdk`, compiled into the module. Never edit. |
+| `Api/HtmlDocument` | Orchard's layer over the SDK's `HtmlDocument` (`<div data-st-id="N">` per segment; plain text HTML-encoded with line breaks as `<br>`; HTML fields as they are, **one segment per field**). Liquid (`{{ }}`, `{% %}`) is swapped for `<span data-st-keep="N"></span>` and restored; if a placeholder is lost, that field keeps the source. |
 | `Services/ContentWalker` | Finds translatable strings in a content item's JSON using the type definition (`PartSchema`/`FieldSchema`), recursing into `FlowPart.Widgets`, `BagPart.ContentItems` and `WidgetsListPart.Widgets`. Pure JSON, unit-tested. |
 | `Services/ContentTranslator` | Copies the source JSON (minus the target-owned parts `LocalizationPart`, `AutoroutePart`, `AliasPart`, `ContainedPart`), walks it, translates in documents of at most `MaxDocumentCharacters` (900 000), applies the result to the target with `ContentItem.Apply()` and sets `DisplayText`. |
 | `Services/SupertextConfiguration` | Settings in effect: site settings (`SupertextSettings`, key protected with data protection purpose `Supertext.OrchardCore.Translation.ApiKey`), overridden by `SUPERTEXT_API_KEY` / `SUPERTEXT_API_ENDPOINT` or the tenant configuration `Supertext:ApiKey` / `Supertext:Endpoint`. Language mapping and exclusions parsing. |
@@ -50,7 +51,7 @@ All UI text goes through Orchard Core's localization: `T["…"]` in views, `S["�
 
 ## Supertext API protocol
 
-AI file translation API v1, shared with all Supertext plugins:
+AI file translation API v1, shared with all Supertext plugins. Every call goes through the Supertext SDK (see *Supertext SDK*); this is what it does:
 
 1. `POST translate/ai/file` — multipart: `file` (`content.html`, part `Content-Type: text/html` exactly), `target_lang` (`de-CH`), `source_lang` (primary subtag, `en`), optional `politeness` (`more`/`less`) → `{file_id}`
 2. `GET translate/ai/file/{id}/status` every 2 s until `done` (`error`, `limit_exceeded`, `deleted` fail; timeout from settings, default 300 s)
@@ -59,9 +60,19 @@ AI file translation API v1, shared with all Supertext plugins:
 
 Header `Authorization: Supertext-Auth-Key <key>` (a pasted prefix is stripped, exactly one is sent). HTTP 429 is retried up to 4 times (`Retry-After`, else 1/2/4/8 s with jitter). Cultures are translated one after the other to stay under the per-second limit. The settings page calls `GET features` (free) to check the key.
 
+## Supertext SDK
+
+The protocol above, the retries, the language codes and the `data-st-id` document come from the official Supertext .NET SDK ([Supertext/Supertext-API-SDK-and-Guide](https://github.com/Supertext/Supertext-API-SDK-and-Guide)). The module compiles a copy from `lib/supertext-sdk/src/` into its own assembly (`<Compile Include=… Link="Sdk/…">` in the `.csproj`), with the namespace changed from `Supertext.Sdk` to `Supertext.OrchardCore.Translation.Sdk`, so sites install nothing extra and another package that references the SDK itself can't clash with it. `lib/supertext-sdk/COMMIT` names the SDK revision. The SDK uses nullable annotations; the module keeps nullable off and silences CS8632 for them.
+
+- Never edit `lib/supertext-sdk/`. Fix the SDK in its repository, then run `scripts/vendor-sdk.sh [ref]` (default `main`; `SDK_DIR=/path/to/clone` uses a local clone) and the tests.
+- `Api/SupertextClient` turns every SDK error code into a `SupertextException` template (the arms of its switch, read by `LocalizationTests`). A new SDK error code needs an arm there and its entry in `de.po`, `fr.po` and `it.po`.
+- Segments missing from Supertext's answer (or whose Liquid came back damaged) keep the source text; the translator logs them.
+- The live API answers an unknown language (`xx-YY`) with HTTP 404 `INVALID_LANGUAGE_PAIR`; the SDK reports it as `invalid_language_pair` with both codes, shown as "Supertext does not support this language pair (en → xx-YY)".
+- The demo image copies `lib/` next to `src/` (see `demo/Dockerfile`).
+
 ## Language codes
 
-Supertext wants the **source** as a bare language (`en`) and the **target** as a regional code (`de-DE`, `fr-CH`, `en-US`); a bare target such as `de` is rejected with `INVALID_LANGUAGE_PAIR`. `src/Supertext.OrchardCore.Translation/Api/LanguageCodes.cs` (no CMS dependency, unit-tested in `LanguageCodesTests`) turns cultures into Supertext codes:
+Supertext wants the **source** as a bare language (`en`) and the **target** as a regional code (`de-DE`, `fr-CH`, `en-US`); a bare target such as `de` is rejected with `INVALID_LANGUAGE_PAIR`. `src/Supertext.OrchardCore.Translation/Api/LanguageCodes.cs` (the SDK's `LanguageCodes` plus the per-culture override; no CMS dependency, unit-tested in `LanguageCodesTests`) turns cultures into Supertext codes:
 
 - **Target** (`LanguageCodes.Target`): the **Language codes** mapping (`culture=code`, read by `SupertextConfiguration`) if set, else the culture. It is normalized (`de_ch`/`de-ch` → `de-CH`, `zh-hant` → `zh-Hant`, `es-419` stays); a code without region gets a default region: ar-SA, bg-BG, cs-CZ, da-DK, de-DE, el-GR, en-US, es-ES, et-EE, fi-FI, fr-FR, hr-HR, hu-HU, it-IT, ja-JP, ko-KR, lt-LT, lv-LV, nb-NO, nl-NL, pl-PL, pt-PT, ro-RO, ru-RU, sk-SK, sl-SI, sr-RS, sv-SE, th-TH, tr-TR, uk-UA, vi-VN, zh-CN (the same table as the Shopify app). Unknown bare codes are sent unchanged, so Supertext's error names them.
 - **Source** (`LanguageCodes.Source`): the bare language of the source culture's override if set, else of the culture (`en-US` → `en`).
@@ -92,7 +103,7 @@ If a Razor view suddenly fails with errors at impossible positions after editing
 ## Tests
 
 ```bash
-dotnet test tests/Supertext.OrchardCore.Translation.Tests   # HTML packing, Liquid protection, content walker, settings parsing, module version, UI strings in de/fr/it
+dotnet test tests/Supertext.OrchardCore.Translation.Tests   # SDK wrapper against a fake API, HTML packing, Liquid protection, content walker, settings parsing, module version, UI strings in de/fr/it
 ```
 
 CI (`.github/workflows/ci.yml`) builds the module and the demo, runs the tests, checks the demo entrypoint and the Node scripts' syntax.
