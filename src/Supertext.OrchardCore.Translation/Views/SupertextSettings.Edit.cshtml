@@ -1,4 +1,5 @@
 @model SupertextSettingsViewModel
+@inject Supertext.OrchardCore.Translation.Services.KeyCheckMessages KeyCheckMessages
 @{
     var keyPlaceholder = Model.HasStoredApiKey ? T["A key is stored. Leave empty to keep it."].Value : T["Paste your Supertext API key"].Value;
     var keyHint = T["It may include the Supertext-Auth-Key prefix. The key is stored encrypted and checked when you save."];
@@ -43,6 +44,22 @@
     }
 </div>
 
+<div class="mb-3 supertext-key-check">
+    <span class="form-label d-block">@T["API key check"]</span>
+    @if (Model.KeyCheck is null)
+    {
+        <span class="text-muted">@T["Not checked yet. The key is checked when you save these settings."]</span>
+    }
+    else
+    {
+        var checkClass = Model.KeyCheck.Status == "ok" ? "alert-success" : Model.KeyCheck.Status == "invalid" ? "alert-danger" : "alert-warning";
+        <div class="alert @checkClass mb-0 py-2">
+            @KeyCheckMessages.Describe(Model.KeyCheck)
+            <span class="d-block small text-muted">@(await KeyCheckMessages.CheckedAtAsync(Model.KeyCheck))</span>
+        </div>
+    }
+</div>
+
 <h3>@T["Translation"]</h3>
 
 <div class="mb-3">
@@ -62,10 +79,59 @@
     </select>
 </div>
 
-<div class="mb-3">
-    <label asp-for="LanguageMapping" class="form-label">@T["Language codes"]</label>
-    <textarea asp-for="LanguageMapping" rows="3" class="form-control font-monospace" placeholder="de=de-CH"></textarea>
-    <span class="hint">@T["One culture=code per line, if Supertext should get a different language code than the culture's name. Cultures of this site: {0}.", string.Join(", ", Model.Cultures)]</span>
+<div class="mb-3 supertext-language-mapping">
+    <span class="form-label d-block">@T["Language mapping"]</span>
+    <span class="hint d-block mb-2">@T["The Supertext language each culture is translated into (and from). Cultures whose name is a Supertext code (de-CH, fr-CH, es …) are pre-selected; others, such as de or en, need a choice, because Supertext needs to know the region."]</span>
+    @if (Model.Mappings.Any(m => string.IsNullOrEmpty(m.Code)))
+    {
+        <div class="alert alert-warning py-2 supertext-unmapped">@T["Some cultures have no Supertext language yet. Content can't be translated into or from them until you choose one."]</div>
+    }
+    <table class="table table-sm align-middle mb-0">
+        <thead>
+            <tr>
+                <th>@T["Culture"]</th>
+                <th>@T["Supertext language"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (var i = 0; i < Model.Mappings.Count; i++)
+            {
+                var row = Model.Mappings[i];
+                var known = Model.TargetLanguages.Any(l => l.Code == row.Code);
+                <tr>
+                    <td>
+                        <input type="hidden" asp-for="Mappings[i].Culture" />
+                        <label asp-for="Mappings[i].Code">@row.CultureName <span class="text-muted">(@row.Culture)</span></label>
+                    </td>
+                    <td>
+                        <select asp-for="Mappings[i].Code" class="form-select form-select-sm">
+                            <option value="">@T["Not mapped"]</option>
+                            @if (!string.IsNullOrEmpty(row.Code) && !known)
+                            {
+                                <option value="@row.Code" selected>@row.Code</option>
+                            }
+                            @foreach (var language in Model.TargetLanguages)
+                            {
+                                <option value="@language.Code" selected="@(language.Code == row.Code)">@language.Name (@language.Code)</option>
+                            }
+                        </select>
+                        @if (string.IsNullOrEmpty(row.Code))
+                        {
+                            <span class="d-block small text-danger">@T["Not mapped: this culture can't be translated with Supertext yet."]</span>
+                        }
+                        @if (row.UnknownCode)
+                        {
+                            <span class="d-block small text-danger">@T["Supertext doesn't offer the code {0}. Choose a language from the list.", row.Code]</span>
+                        }
+                        @if (row.PolitenessUnavailable)
+                        {
+                            <span class="d-block small text-warning-emphasis">@T["Supertext offers no formal/informal choice for this language: it is translated in the default tone."]</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>
 
 <div class="mb-3">
@@ -78,6 +144,28 @@
     <label asp-for="PollTimeoutSeconds" class="form-label">@T["Timeout per language (seconds)"]</label>
     <input asp-for="PollTimeoutSeconds" type="number" min="30" max="3600" class="form-control" style="max-width: 10rem" />
     <span asp-validation-for="PollTimeoutSeconds"></span>
+</div>
+
+<h3>@T["Support"]</h3>
+
+<div class="mb-3 supertext-version-reports">
+    <div class="form-check">
+        @if (Model.VersionReportsFromEnvironment is bool forced)
+        {
+            <input type="checkbox" class="form-check-input" id="SendVersionInformationForced" checked="@forced" disabled />
+            <label class="form-check-label" for="SendVersionInformationForced">@T["Send version information to Supertext"]</label>
+        }
+        else
+        {
+            <input asp-for="SendVersionInformation" type="checkbox" class="form-check-input" />
+            <label asp-for="SendVersionInformation" class="form-check-label">@T["Send version information to Supertext"]</label>
+        }
+    </div>
+    <span class="hint">@T["Sends the site URL and the versions of this plugin, the CMS and the runtime to Supertext when you save these settings and after an update, so Supertext support can see which version you run. No content, no API key and no personal data are sent."]</span>
+    @if (Model.VersionReportsFromEnvironment is bool forcedValue)
+    {
+        <span class="hint d-block">@(forcedValue ? T["Turned on by SUPERTEXT_VERSION_REPORTS."] : T["Turned off by SUPERTEXT_VERSION_REPORTS."])</span>
+    }
 </div>
 
 @if (!string.IsNullOrEmpty(Model.ModuleVersion))

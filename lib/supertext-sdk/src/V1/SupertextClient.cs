@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace Supertext.OrchardCore.Translation.Sdk;
+namespace Supertext.OrchardCore.Translation.Sdk.V1;
 
 /// <summary>
 /// Client for the Supertext AI file translation API v1: upload an HTML document, poll its status,
@@ -12,8 +12,9 @@ namespace Supertext.OrchardCore.Translation.Sdk;
 /// </summary>
 /// <remarks>
 /// What the Supertext plugins learned against the live API is built in: the Authorization prefix,
-/// language codes (bare source, regional target), the exact multipart format, HTTP 429 retries,
-/// and one <c>data-st-id</c> element per text (see <see cref="TranslateTextsAsync"/>).
+/// the exact multipart format, HTTP 429 retries, and one <c>data-st-id</c> element per text (see
+/// <see cref="TranslateTextsAsync"/>). Language codes are sent as given: resolve CMS languages with
+/// <see cref="Languages.Target"/> and <see cref="Languages.Source"/> first.
 /// </remarks>
 public sealed partial class SupertextClient
 {
@@ -31,7 +32,7 @@ public sealed partial class SupertextClient
 
     // One shared client for everyone who doesn't bring their own (avoids socket exhaustion).
     // Infinite timeout: RequestTimeout is applied per request instead.
-    private static readonly Lazy<HttpClient> SharedHttpClient = new(() => new HttpClient { Timeout = System.Threading.Timeout.InfiniteTimeSpan });
+    internal static readonly Lazy<HttpClient> SharedHttpClient = new(() => new HttpClient { Timeout = System.Threading.Timeout.InfiniteTimeSpan });
 
     private readonly string apiKey;
     private readonly Uri baseUri;
@@ -99,6 +100,45 @@ public sealed partial class SupertextClient
         return (int)Math.Min(30_000, backoff);
     }
 
+    /// <summary>
+    /// The language pairs the API offers right now, with their features (<c>supports_politeness</c>, …):
+    /// the live version of <see cref="Languages.Sources"/> and <see cref="Languages.Targets"/>, e.g. for a
+    /// settings page. Cost-free (<c>GET features</c>). Malformed entries are skipped.
+    /// </summary>
+    /// <exception cref="SupertextException">E.g. <see cref="SupertextErrorCodes.AuthenticationFailure"/>.</exception>
+    public async Task<IReadOnlyList<FeatureSupport>> GetFeaturesAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await SendAsync(HttpMethod.Get, "features", null, cancellationToken).ConfigureAwait(false);
+        var result = new List<FeatureSupport>();
+        try
+        {
+            using var json = JsonDocument.Parse(response.Body);
+            if (json.RootElement.ValueKind != JsonValueKind.Object
+                || !json.RootElement.TryGetProperty("supported_features", out var list) || list.ValueKind != JsonValueKind.Array)
+            {
+                return result;
+            }
+            foreach (var item in list.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object
+                    || !item.TryGetProperty("source_lang", out var source) || source.ValueKind != JsonValueKind.String
+                    || !item.TryGetProperty("target_lang", out var target) || target.ValueKind != JsonValueKind.String)
+                {
+                    continue;
+                }
+                var features = item.TryGetProperty("features", out var f) && f.ValueKind == JsonValueKind.Array
+                    ? f.EnumerateArray().Where(v => v.ValueKind == JsonValueKind.String).Select(v => v.GetString()!).ToList()
+                    : [];
+                result.Add(new FeatureSupport(source.GetString()!, target.GetString()!, features.AsReadOnly()));
+            }
+        }
+        catch (JsonException)
+        {
+            // Not JSON: no pairs.
+        }
+        return result;
+    }
+
     /// <summary>Checks that the key works (<c>GET features</c>, no cost).</summary>
     /// <exception cref="SupertextException">E.g. <see cref="SupertextErrorCodes.AuthenticationFailure"/>.</exception>
     public async Task ValidateApiKeyAsync(CancellationToken cancellationToken = default)
@@ -106,17 +146,58 @@ public sealed partial class SupertextClient
         await SendAsync(HttpMethod.Get, "features", null, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Uploads an HTML document for translation and returns its file id.</summary>
+    /// <summary>
+    /// The automatic API key check for settings and status screens (spec/reporting.json → apiKeyCheck):
+    /// <c>GET features</c> with a timeout of at most <see cref="Reporting.KeyCheckTimeout"/> and the usual 429 retries.
+    /// Never throws (except when <paramref name="cancellationToken"/> is cancelled): 2xx is
+    /// <see cref="ApiKeyCheckStatus.Ok"/>, 401/403 <see cref="ApiKeyCheckStatus.Invalid"/>, 5xx or no answer
+    /// <see cref="ApiKeyCheckStatus.Unreachable"/>, anything else <see cref="ApiKeyCheckStatus.Error"/>.
+    /// A blank key gives <see cref="ApiKeyCheckStatus.Missing"/> without a request.
+    /// </summary>
+    public async Task<ApiKeyCheck> CheckApiKeyAsync(CancellationToken cancellationToken = default)
+    {
+        var checkedAt = ApiKeyCheck.IsoSeconds(clock.GetUtcNow());
+        var fingerprint = ApiKeyCheck.FingerprintOf(apiKey);
+        if (fingerprint.Length == 0)
+        {
+            return new ApiKeyCheck(ApiKeyCheckStatus.Missing, checkedAt, null, null, fingerprint);
+        }
+        try
+        {
+            var timeout = options.RequestTimeout < Reporting.KeyCheckTimeout ? options.RequestTimeout : Reporting.KeyCheckTimeout;
+            var response = await SendAsync(HttpMethod.Get, "features", null, cancellationToken, timeout).ConfigureAwait(false);
+            return new ApiKeyCheck(ApiKeyCheckStatus.Ok, checkedAt, response.Status, null, fingerprint);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return ApiKeyCheck.FromException(e, checkedAt, fingerprint);
+        }
+    }
+
+    /// <summary>
+    /// Uploads an HTML document for translation and returns its file id. The language codes are sent
+    /// as given (trimmed): resolve CMS languages with <see cref="Languages.Target"/> and
+    /// <see cref="Languages.Source"/> first.
+    /// </summary>
     /// <param name="html">The document (UTF-8 HTML).</param>
-    /// <param name="targetLang">Target language; passed through <see cref="LanguageCodes.Target"/> (<c>de</c> → <c>de-DE</c>).</param>
-    /// <param name="sourceLang">Source language; passed through <see cref="LanguageCodes.Source"/> (<c>en-US</c> → <c>en</c>). Null or empty: Supertext detects it.</param>
-    /// <param name="politeness">Formal or informal address.</param>
+    /// <param name="targetLang">Target language as Supertext expects it, e.g. <c>de-CH</c> (<see cref="Languages.Targets"/>). Empty: <see cref="SupertextErrorCodes.UnsupportedLanguage"/> without a request.</param>
+    /// <param name="sourceLang">Source language, e.g. <c>en</c>. Null or empty: left out, Supertext detects it.</param>
+    /// <param name="politeness">Formal or informal address (only for targets with <see cref="TargetLanguage.Politeness"/>; otherwise the API answers <see cref="SupertextErrorCodes.UnsupportedFeature"/>).</param>
     /// <param name="cancellationToken">Cancels the request.</param>
     public async Task<string> SubmitAsync(string html, string targetLang, string? sourceLang = null,
         Politeness politeness = Politeness.Default, CancellationToken cancellationToken = default)
     {
-        var target = LanguageCodes.Target(targetLang);
-        var source = LanguageCodes.Source(sourceLang);
+        var target = (targetLang ?? string.Empty).Trim();
+        if (target.Length == 0)
+        {
+            throw new SupertextException(SupertextErrorCodes.UnsupportedLanguage,
+                "This language has no Supertext language code. Map it to a Supertext language.");
+        }
+        var source = (sourceLang ?? string.Empty).Trim();
         var bytes = Encoding.UTF8.GetBytes(html);
 
         // Rebuilt for every attempt: HttpContent can't be sent twice.
@@ -245,8 +326,8 @@ public sealed partial class SupertextClient
     /// unchanged; if nothing is left to translate, no request is made.
     /// </summary>
     /// <param name="segments">Key → text, in the order you want them back (e.g. a <c>Dictionary</c> or a list of pairs).</param>
-    /// <param name="targetLang">Target language; passed through <see cref="LanguageCodes.Target"/>.</param>
-    /// <param name="sourceLang">Source language; passed through <see cref="LanguageCodes.Source"/>. Null or empty: auto-detect.</param>
+    /// <param name="targetLang">Target language as Supertext expects it (sent as given, trimmed).</param>
+    /// <param name="sourceLang">Source language (sent as given, trimmed). Null or empty: auto-detect.</param>
     /// <param name="politeness">Formal or informal address.</param>
     /// <param name="maxCharacters">Packed characters per document.</param>
     /// <param name="cancellationToken">Cancels the translation.</param>
@@ -334,8 +415,10 @@ public sealed partial class SupertextClient
     private sealed record Response(int Status, string Body);
 
     /// <summary>Sends one request (retrying 429s), reads the whole answer, and maps errors.</summary>
-    private async Task<Response> SendAsync(HttpMethod method, string path, Func<HttpContent>? content, CancellationToken cancellationToken)
+    private async Task<Response> SendAsync(HttpMethod method, string path, Func<HttpContent>? content, CancellationToken cancellationToken,
+        TimeSpan? requestTimeout = null)
     {
+        var timeoutAfter = requestTimeout ?? options.RequestTimeout;
         // Throws missing_api_key before anything is sent.
         var authorization = AuthHeader(apiKey);
         var uri = new Uri(baseUri, path);
@@ -352,7 +435,7 @@ public sealed partial class SupertextClient
             string? retryAfter = null;
             using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
-                timeout.CancelAfter(options.RequestTimeout);
+                timeout.CancelAfter(timeoutAfter);
                 try
                 {
                     using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
@@ -371,7 +454,7 @@ public sealed partial class SupertextClient
                 catch (OperationCanceledException e)
                 {
                     throw new SupertextException(SupertextErrorCodes.TransportError, "Could not reach Supertext.",
-                        detail: $"Request timed out after {options.RequestTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} s", innerException: e);
+                        detail: $"Request timed out after {timeoutAfter.TotalSeconds.ToString(CultureInfo.InvariantCulture)} s", innerException: e);
                 }
                 catch (Exception e) when (e is HttpRequestException or IOException or InvalidOperationException)
                 {
@@ -403,7 +486,7 @@ public sealed partial class SupertextClient
         }
         detail = Redact(detail);
 
-        string? apiErrorCode = null, sourceLang = null, targetLang = null;
+        string? apiErrorCode = null, sourceLang = null, targetLang = null, feature = null;
         try
         {
             using var json = JsonDocument.Parse(body);
@@ -412,6 +495,7 @@ public sealed partial class SupertextClient
                 apiErrorCode = StringProperty(json.RootElement, "error_code");
                 sourceLang = StringProperty(json.RootElement, "source_lang");
                 targetLang = StringProperty(json.RootElement, "target_lang");
+                feature = StringProperty(json.RootElement, "feature");
             }
         }
         catch (JsonException)
@@ -419,11 +503,12 @@ public sealed partial class SupertextClient
             // Not JSON: no API error code.
         }
 
-        var invalidPair = (status == 400 || status == 404) && (apiErrorCode == "INVALID_LANGUAGE_PAIR" || body.Contains("INVALID_LANGUAGE_PAIR", StringComparison.Ordinal));
+        var invalidPair = (status == 400 || status == 404) && body.Contains("INVALID_LANGUAGE_PAIR", StringComparison.Ordinal);
+        var unsupportedFeature = !invalidPair && status == 400 && apiErrorCode == "FEATURE_ERROR";
         var (code, message) = status switch
         {
-            _ when invalidPair => (SupertextErrorCodes.InvalidLanguagePair,
-                "Supertext rejected the language pair. The source must be a bare language (en), the target a regional code (de-DE)."),
+            _ when invalidPair => (SupertextErrorCodes.InvalidLanguagePair, "Supertext does not support this language pair."),
+            _ when unsupportedFeature => (SupertextErrorCodes.UnsupportedFeature, "Supertext does not support this option for the language pair."),
             401 or 403 => (SupertextErrorCodes.AuthenticationFailure, "Supertext rejected the API key. " + KeyHelp),
             404 => (SupertextErrorCodes.NotFound, "Supertext does not know this file (expired or already deleted)."),
             413 => (SupertextErrorCodes.PayloadTooLarge, "The document is too large for Supertext."),
@@ -431,8 +516,9 @@ public sealed partial class SupertextClient
             >= 500 and < 600 => (SupertextErrorCodes.ServiceUnavailable, "The Supertext service is unavailable."),
             _ => (SupertextErrorCodes.UnexpectedStatus, $"Supertext answered with HTTP {status.ToString(CultureInfo.InvariantCulture)}."),
         };
+        var languages = invalidPair || unsupportedFeature;
         return new SupertextException(code, message, status, detail, apiErrorCode,
-            invalidPair ? sourceLang : null, invalidPair ? targetLang : null);
+            languages ? sourceLang : null, languages ? targetLang : null, unsupportedFeature ? feature : null);
     }
 
     /// <summary>Removes the API key from text that came from elsewhere (server answers, exception messages).</summary>
@@ -469,8 +555,8 @@ public sealed partial class SupertextClient
     private static string? StringProperty(JsonElement element, string name) =>
         element.TryGetProperty(name, out var value) ? value.ValueKind switch
         {
-            // Strings only: a numeric or null error_code/source_lang is not an API code.
-            JsonValueKind.String => value.GetString(),
+            // Non-empty strings only: a numeric, null or empty error_code/source_lang is not an API code.
+            JsonValueKind.String => value.GetString() is { Length: > 0 } text ? text : null,
             _ => null,
         } : null;
 

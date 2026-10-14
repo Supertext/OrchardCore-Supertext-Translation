@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Supertext.OrchardCore.Translation.Api;
 using Supertext.OrchardCore.Translation.Services;
 using Supertext.OrchardCore.Translation.Settings;
 using Xunit;
@@ -99,7 +100,7 @@ public class ContentWalkerTests
         var settings = new SupertextSettings { LanguageMapping = "de = de-CH\nfr=fr-FR\n", ExcludedFields = "A.B, C\n D " };
         Assert.Equal("de-CH", SupertextConfiguration.TargetLanguageCode(settings, "DE"));
         Assert.Equal("it-CH", SupertextConfiguration.TargetLanguageCode(settings, "it-CH"));
-        Assert.Equal("it-IT", SupertextConfiguration.TargetLanguageCode(settings, "it"));
+        Assert.Throws<SupertextException>(() => SupertextConfiguration.TargetLanguageCode(settings, "it")); // no default region
         Assert.Equal("en", SupertextConfiguration.SourceLanguageCode(settings, "en-US"));
         Assert.Equal("de", SupertextConfiguration.SourceLanguageCode(settings, "de"));
         Assert.Equal(["A.B", "C", "D"], SupertextConfiguration.ExcludedFields(settings));

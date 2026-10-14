@@ -13,6 +13,7 @@ using OrchardCore.Settings;
 using OrchardCore.Title.Models;
 using OrchardCore.Users;
 using OrchardCore.Users.Models;
+using Supertext.OrchardCore.Translation.Settings;
 using YesSql;
 
 namespace SupertextDemo.DemoSetup;
@@ -49,6 +50,7 @@ public sealed class DemoSetupEvents(ShellSettings shellSettings, ILogger<DemoSet
             {
                 var services = scope.ServiceProvider;
                 await EnsureCulturesAsync(services);
+                await EnsureLanguageMappingAsync(services);
                 await EnsureEditorRoleAsync(services);
                 await EnsureAccountAsync(services, "DEMO_ADMIN", "Administrator", fallbackPrefix: "ORCHARD_ADMIN");
                 await EnsureAccountAsync(services, "DEMO_EDITOR", "Editor");
@@ -82,6 +84,26 @@ public sealed class DemoSetupEvents(ShellSettings shellSettings, ILogger<DemoSet
         await siteService.UpdateSiteSettingsAsync(site);
         services.GetRequiredService<IShellReleaseManager>().RequestRelease();
         logger.LogInformation("[demo] added cultures {Cultures}", string.Join(", ", missing));
+    }
+
+    /// <summary>
+    /// de-CH, fr-CH and it-CH are Supertext codes already; the source culture "en" isn't a Supertext
+    /// target (Supertext needs en-US or en-GB), so the demo maps it once, unless an administrator
+    /// already set a mapping.
+    /// </summary>
+    private async Task EnsureLanguageMappingAsync(IServiceProvider services)
+    {
+        var siteService = services.GetRequiredService<ISiteService>();
+        var site = await siteService.LoadSiteSettingsAsync();
+        var settings = site.TryGet<SupertextSettings>(out var existing) ? existing : new SupertextSettings();
+        if (!string.IsNullOrWhiteSpace(settings.LanguageMapping))
+        {
+            return;
+        }
+        settings.LanguageMapping = "en=en-US";
+        site.Put(settings);
+        await siteService.UpdateSiteSettingsAsync(site);
+        logger.LogInformation("[demo] mapped the culture en to the Supertext language en-US");
     }
 
     private async Task EnsureEditorRoleAsync(IServiceProvider services)

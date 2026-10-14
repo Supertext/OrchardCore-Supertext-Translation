@@ -6,18 +6,21 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- Automatic API key check: when Settings → Supertext is saved, when a key from `SUPERTEXT_API_KEY` is new or changed, and when Supertext rejects the key during a translation. Settings → Supertext shows the latest result with its time (*the connection works*, *rejected*, *no key*, *Supertext can't be reached*, *error*; with the account and API key links where they help) in English, German, French and Italian; it replaces the old "Connected to Supertext" notice.
+- *Send version information to Supertext* (Settings → Supertext → Support, on by default; `SUPERTEXT_VERSION_REPORTS=0` turns it off): when the settings are saved and after an update, the module sends the site URL, the module, Orchard Core, .NET and SDK versions, whether a key is set, the key check result and the ping address to Supertext. No content, no API key and no personal data. Reports are sent after the page is delivered and never break saving or translating.
+- Public ping endpoint `GET /supertext/ping` that only echoes Supertext's challenge, so Supertext can check the site is reachable (404 with version reports off).
+- **Language mapping** table on Settings → Supertext: one row per culture with a list of Supertext's languages, pre-selected where the culture is a Supertext code; unmapped cultures are marked *Not mapped*, codes Supertext doesn't offer and languages without a formal/informal choice are pointed out.
+- Messages for a culture without a Supertext language (*has no Supertext language yet*) and for a form of address Supertext doesn't offer for a language, in all four languages.
+
 - Its own message for an unsupported language pair, naming the codes ("Supertext does not support this language pair (en → xx-YY)"), in English, German, French and Italian.
 - French and Italian interface (and German where it was missing): buttons, the Translate with Supertext page, Settings → Supertext, notifications and Supertext error messages follow the admin's interface language (`Localization/de.po`, `fr.po`, `it.po`). The "Authentication failed" and missing-key errors now also link to Supertext account signup and API key generation.
 - Settings → Supertext shows the installed module version, linked to its GitHub release notes.
 
 ### Changed
 
-- All Supertext API calls now go through the official Supertext .NET SDK, compiled into the module (nothing extra to install). The HtmlAgilityPack dependency is gone.
-
-### Fixed
-
-- Cultures without a region (e.g. `de`, `fr`) are now sent to Supertext as `de-DE`, `fr-FR` (Supertext rejects targets without region); **Language codes** mappings are normalized (`de_ch` → `de-CH`) and, for the source culture, sent without region.
-- Locale variants such as `de_DE_formal` (in the **Language codes** mapping) are sent to Supertext as `de-DE`.
+- All Supertext API calls now go through the official Supertext .NET SDK (0.2.1, commit `eeba8fa`, `V1` namespace), compiled into the module (nothing extra to install). The HtmlAgilityPack dependency is gone.
+- **Languages are no longer guessed.** A culture that is a Supertext code (`de-CH`, `fr-CH`, `es`, `zh-Hans`, apart from case and `_`/`-`) is used as it is; every other culture (`de`, `en`, `zh-CN`, `es-ES` …) needs a Supertext language in the **Language mapping** (formerly *Language codes*; existing `culture=code` entries are kept). Supertext only accepts its own codes: regional for German, English, French, Italian and Portuguese, bare for most others (`es`, `nl`, `sl`). An unmapped culture is not sent to Supertext.
+- The form of address is only sent for languages Supertext offers it for; English, Swiss German, Romansh, Albanian and Serbian are translated in the default tone.
 
 ## 0.1.0 — 2026-10-07
 

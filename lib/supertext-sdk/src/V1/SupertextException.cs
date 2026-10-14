@@ -1,4 +1,4 @@
-namespace Supertext.OrchardCore.Translation.Sdk;
+namespace Supertext.OrchardCore.Translation.Sdk.V1;
 
 /// <summary>
 /// The error codes of <see cref="SupertextException.Code"/>. The values are fixed and the same in
@@ -12,8 +12,20 @@ public static class SupertextErrorCodes
     /// <summary>HTTP 401/403: the key is wrong, revoked or lacks access.</summary>
     public const string AuthenticationFailure = "authentication_failure";
 
-    /// <summary>HTTP 400 <c>INVALID_LANGUAGE_PAIR</c>: usually a bare target ("de") or a regional source ("en-US").</summary>
+    /// <summary>HTTP 400 or 404 <c>INVALID_LANGUAGE_PAIR</c>: a code Supertext doesn't offer (e.g. <c>de</c> or <c>es-ES</c> as target).</summary>
     public const string InvalidLanguagePair = "invalid_language_pair";
+
+    /// <summary>
+    /// No request was sent: the language has no Supertext code (no mapping and no exact match, see
+    /// <see cref="Languages.Target"/>), or the target is empty. Ask the administrator to map it.
+    /// </summary>
+    public const string UnsupportedLanguage = "unsupported_language";
+
+    /// <summary>
+    /// HTTP 400 <c>FEATURE_ERROR</c>: the language pair exists, but not with this option (e.g. politeness
+    /// for <c>en-US</c>, <c>rm</c>, <c>sq</c>); <see cref="SupertextException.Feature"/> names it.
+    /// </summary>
+    public const string UnsupportedFeature = "unsupported_feature";
 
     /// <summary>HTTP 404: unknown file id (expired after 24 h or already deleted).</summary>
     public const string NotFound = "not_found";
@@ -61,7 +73,8 @@ public sealed class SupertextException : Exception
 {
     /// <summary>Creates an error.</summary>
     public SupertextException(string code, string message, int? status = null, string? detail = null,
-        string? apiErrorCode = null, string? sourceLang = null, string? targetLang = null, Exception? innerException = null)
+        string? apiErrorCode = null, string? sourceLang = null, string? targetLang = null, string? feature = null,
+        Exception? innerException = null)
         : base(string.IsNullOrEmpty(detail) ? message : $"{message} ({detail})", innerException)
     {
         Code = code;
@@ -70,6 +83,7 @@ public sealed class SupertextException : Exception
         ApiErrorCode = apiErrorCode;
         SourceLang = sourceLang;
         TargetLang = targetLang;
+        Feature = feature;
     }
 
     /// <summary>One of <see cref="SupertextErrorCodes"/>.</summary>
@@ -87,9 +101,20 @@ public sealed class SupertextException : Exception
     /// <summary>The <c>error_code</c> of the API's JSON answer, e.g. <c>INVALID_LANGUAGE_PAIR</c>.</summary>
     public string? ApiErrorCode { get; }
 
-    /// <summary>For <see cref="SupertextErrorCodes.InvalidLanguagePair"/>: the source the API saw, if it said so.</summary>
+    /// <summary>
+    /// For <see cref="SupertextErrorCodes.InvalidLanguagePair"/> and <see cref="SupertextErrorCodes.UnsupportedFeature"/>:
+    /// the source the API saw, if it said so. For <see cref="SupertextErrorCodes.UnsupportedLanguage"/> from
+    /// <see cref="Languages.Source"/>: the source code that has no Supertext code.
+    /// </summary>
     public string? SourceLang { get; }
 
-    /// <summary>For <see cref="SupertextErrorCodes.InvalidLanguagePair"/>: the target the API saw, if it said so.</summary>
+    /// <summary>
+    /// For <see cref="SupertextErrorCodes.InvalidLanguagePair"/> and <see cref="SupertextErrorCodes.UnsupportedFeature"/>:
+    /// the target the API saw, if it said so. For <see cref="SupertextErrorCodes.UnsupportedLanguage"/> from
+    /// <see cref="Languages.Target"/>: the target code that has no Supertext code.
+    /// </summary>
     public string? TargetLang { get; }
+
+    /// <summary>For <see cref="SupertextErrorCodes.UnsupportedFeature"/>: the option the API names, e.g. <c>politeness</c>.</summary>
+    public string? Feature { get; }
 }

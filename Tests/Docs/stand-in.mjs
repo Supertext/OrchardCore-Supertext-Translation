@@ -7,11 +7,18 @@
  * with "[<target_lang>] " when STAND_IN_PREFIX=1, which makes untranslated text
  * easy to spot in tests. STAND_IN_DUMP=<dir> writes each submitted document's
  * untranslated segments to <dir>/<target_lang>.json (to extend the samples).
- * Listens on :8765 (PORT), accepts any API key.
+ * Listens on :8765 (PORT), accepts any API key. Also answers the Commando Center's
+ * POST /report (and /api/v1/report) with 202, so a demo pointed at it with
+ * SUPERTEXT_REPORT_URL never reports to the live center; REPORT_LOG=<file> appends each report.
  */
 import http from 'node:http';
 import { randomBytes } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+
+// The target codes the live API accepts (GET features, October 2026; the SDK's Languages.Targets).
+const TARGETS = new Set(['bg', 'cs', 'da', 'de-AT', 'de-CH', 'de-DE', 'el', 'en-GB', 'en-US', 'es', 'fi', 'fr-CH', 'fr-FR',
+  'gsw-u-sd-chbe', 'gsw-u-sd-chzh', 'hr', 'hu', 'it-CH', 'it-IT', 'ja', 'ko', 'nb', 'nl', 'pl', 'pt-BR', 'pt-PT', 'rm', 'ru',
+  'sk', 'sl', 'sq', 'sr-Cyrl', 'sr-Latn', 'sv', 'tr', 'zh-Hans', 'zh-Hant']);
 
 const norm = (s) => s.replace(/&apos;|&#39;/g, "'").replace(/&nbsp;/g, ' ').replace(/<br\s*\/?>/g, '<br>').replace(/\s+/g, ' ').trim();
 const samples = new Map();
@@ -34,6 +41,16 @@ http
       res.writeHead(status, { 'Content-Type': type });
       res.end(type === 'application/json' ? JSON.stringify(body) : body);
     };
+    if (req.method === 'POST' && /^(\/api\/v1)?\/report$/.test(path)) {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const body = Buffer.concat(chunks).toString();
+      let event = '?';
+      try { event = JSON.parse(body).event ?? '?'; } catch { /* logged as '?' */ }
+      console.log(`report ${event}`);
+      if (process.env.REPORT_LOG) appendFileSync(process.env.REPORT_LOG, body + '\n');
+      return send(202, { ok: true });
+    }
     if (!/^Supertext-Auth-Key \S+$/.test(req.headers.authorization || '')) return send(401, { error: 'missing key' });
     if (path === '/features') return send(200, {});
     if (req.method === 'POST' && path === '/translate/ai/file') {
@@ -47,10 +64,10 @@ http
         return send(400, { error: 'INVALID_MULTIPART' });
       }
       const target = String(form.get('target_lang') || '');
-      // Like the live API: a target without region (e.g. "de") is not a valid pair.
-      if (!/^[a-z]{2,3}-([A-Z]{2}|[A-Z][a-z]{3}|\d{3})$/.test(target)) {
+      // Like the live API: only its exact target codes ("de" or "es-ES" are not valid pairs; "es" is).
+      if (!TARGETS.has(target)) {
         console.log(`POST target_lang=${target} rejected: INVALID_LANGUAGE_PAIR`);
-        return send(400, { error_code: 'INVALID_LANGUAGE_PAIR', source_lang: form.get('source_lang'), target_lang: target });
+        return send(404, { error_code: 'INVALID_LANGUAGE_PAIR', source_lang: form.get('source_lang'), target_lang: target });
       }
       const id = randomBytes(6).toString('hex');
       files.set(id, { html: await form.get('file').text(), lang: target });

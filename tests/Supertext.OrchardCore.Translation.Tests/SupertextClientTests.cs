@@ -25,7 +25,7 @@ public class SupertextClientTests
             new("<p>Hi {{ User.Name }}</p>", true),
             new("Lost", false),
             new("   ", false),
-        ], "de", "en-GB", "more");
+        ], "de-DE", "en", "more");
 
         Assert.Equal("Hallo", result[0]);
         Assert.Equal("<p>Hoi {{ User.Name }}</p>", result[1]);
@@ -46,7 +46,7 @@ public class SupertextClientTests
 
         var error = await Assert.ThrowsAsync<SupertextException>(() => client.TranslateDocumentAsync(Connection, "<p>x</p>", "xx-YY", "en", "default"));
 
-        Assert.Equal("Supertext does not support this language pair ({0} → {1}). Check the language codes under Settings → Supertext.", error.Template);
+        Assert.Equal("Supertext does not support this language pair ({0} → {1}). Check the language mapping under Settings → Supertext.", error.Template);
         Assert.Equal(new object[] { "en", "xx-YY" }, error.Args);
     }
 

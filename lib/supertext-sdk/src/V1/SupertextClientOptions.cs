@@ -1,4 +1,4 @@
-namespace Supertext.OrchardCore.Translation.Sdk;
+namespace Supertext.OrchardCore.Translation.Sdk.V1;
 
 /// <summary>Formality of the translation, for languages that distinguish it.</summary>
 public enum Politeness
@@ -46,6 +46,26 @@ public sealed class SupertextClientOptions
     /// <summary>How the client waits (polling, retries). Default <see cref="Task.Delay(TimeSpan, CancellationToken)"/>; replace it in tests.</summary>
     public Func<TimeSpan, CancellationToken, Task>? Sleep { get; init; }
 
-    /// <summary>Clock for the polling timeout. Default <see cref="TimeProvider.System"/>; replace it in tests.</summary>
+    /// <summary>Clock for the polling timeout and <see cref="ApiKeyCheck.CheckedAt"/>. Default <see cref="TimeProvider.System"/>; replace it in tests.</summary>
     public TimeProvider? TimeProvider { get; init; }
+
+    /// <summary>A copy with another clock (the reporter's, for the key check).</summary>
+    internal SupertextClientOptions WithTimeProvider(TimeProvider timeProvider) => new()
+    {
+        BaseUrl = BaseUrl,
+        PollInterval = PollInterval,
+        Timeout = Timeout,
+        RequestTimeout = RequestTimeout,
+        MaxRetries = MaxRetries,
+        UserAgent = UserAgent,
+        HttpClient = HttpClient,
+        Sleep = Sleep,
+        TimeProvider = timeProvider,
+    };
 }
+
+/// <summary>One language pair from <c>GET features</c> (<see cref="SupertextClient.GetFeaturesAsync"/>).</summary>
+/// <param name="SourceLang">Source code, e.g. <c>en</c>.</param>
+/// <param name="TargetLang">Target code, e.g. <c>de-CH</c>.</param>
+/// <param name="Features">E.g. <c>supports_politeness</c>, <c>supports_glossary</c>.</param>
+public sealed record FeatureSupport(string SourceLang, string TargetLang, IReadOnlyList<string> Features);

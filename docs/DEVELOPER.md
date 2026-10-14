@@ -15,13 +15,23 @@ Content list "Supertext" / editor "Translate with Supertext"
 Orchard Core "Localizations → + culture" (ContentLocalization AdminController.Localize)
    └─ IContentLocalizationManager.LocalizeAsync → clone
         └─ SupertextLocalizationHandler.LocalizingAsync → ContentTranslator.TranslateAsync(original → clone)
+
+Settings → Supertext (save)  → SupertextReporting.AfterSettingsSavedAsync  ── key check + report (in the request)
+Settings page, Translate page, localization hook → SupertextReporting.OnRequestAsync ── after the response
+Translation rejected (401/403) → SupertextReporting.AuthenticationFailedAsync ── after the response
+GET /supertext/ping (public)  → PingController → VersionReports.Ping (SDK PingResponse)
 ```
 
 | Part | Role |
 | --- | --- |
 | `Manifest.cs`, `Startup.cs` | Module *Supertext Translation* (feature id `Supertext.OrchardCore.Translation`), depends on `OrchardCore.ContentLocalization` and `OrchardCore.Settings`. Registers the typed `HttpClient`, services, drivers, menu, permissions. |
 | `Api/SupertextClient` | Wrapper around the bundled Supertext SDK (`lib/supertext-sdk`, see *Supertext SDK*): the protocol below, 429 retries, prefix-tolerant key, segments packed into documents below the size limit; SDK error codes become `SupertextException` templates. Stateless: each call takes a `SupertextConnection`. |
-| `Sdk/…` (`lib/supertext-sdk/src`) | Bundled copy of the Supertext .NET SDK, namespace `Supertext.OrchardCore.Translation.Sdk`, compiled into the module. Never edit. |
+| `Sdk/…` (`lib/supertext-sdk/src`) | Bundled copy of the Supertext .NET SDK, namespace `Supertext.OrchardCore.Translation.Sdk` (`SdkInfo`) and `.Sdk.V1` (everything that talks to the API v1), compiled into the module. Never edit. |
+| `Api/LanguageMapping` | Cultures → Supertext codes with the SDK's `Languages` (see *Language codes*); parses and writes the *Language mapping* setting; decides whether the form of address is sent. No Orchard dependency, unit-tested. |
+| `Api/VersionReports` | Commando Center glue (see *Commando Center*): plugin/system names, site and callback URL, the setting with `SUPERTEXT_VERSION_REPORTS`, the SDK's `InstallationReporter` and `PingResponse`. No Orchard dependency, unit-tested. |
+| `Services/SupertextReporting` | Runs the reporter with Orchard's data and keeps its state in the site document (`SupertextReportingState`); `OnRequestAsync`/`AuthenticationFailedAsync` run after the response (`HttpBackgroundJob`). |
+| `Services/KeyCheckMessages` | The key check result in the admin's language (the center's message table, with links). |
+| `Controllers/PingController` | `GET /supertext/ping`: public, answers exactly the SDK's `PingResponse`. |
 | `Api/HtmlDocument` | Orchard's layer over the SDK's `HtmlDocument` (`<div data-st-id="N">` per segment; plain text HTML-encoded with line breaks as `<br>`; HTML fields as they are, **one segment per field**). Liquid (`{{ }}`, `{% %}`) is swapped for `<span data-st-keep="N"></span>` and restored; if a placeholder is lost, that field keeps the source. |
 | `Services/ContentWalker` | Finds translatable strings in a content item's JSON using the type definition (`PartSchema`/`FieldSchema`), recursing into `FlowPart.Widgets`, `BagPart.ContentItems` and `WidgetsListPart.Widgets`. Pure JSON, unit-tested. |
 | `Services/ContentTranslator` | Copies the source JSON (minus the target-owned parts `LocalizationPart`, `AutoroutePart`, `AliasPart`, `ContainedPart`), walks it, translates in documents of at most `MaxDocumentCharacters` (900 000), applies the result to the target with `ContentItem.Apply()` and sets `DisplayText`. |
@@ -29,7 +39,7 @@ Orchard Core "Localizations → + culture" (ContentLocalization AdminController.
 | `Handlers/SupertextLocalizationHandler` | `IContentLocalizationHandler`; translates the clone during Orchard's own Localize action unless the setting is off or `SupertextScope.SuppressAutomaticTranslation` is set. Catches every error (Orchard's own localization always goes on) and tells the editor with a notification. |
 | `Controllers/AdminController` | The *Translate with Supertext* page. Requires `TranslateWithSupertext`, `LocalizeContent` and `EditContent` on the source, and `EditContent` on an existing target. Overwriting needs `confirmOverwrite`. Translates first, creates/loads the target only on success, so a failure leaves nothing behind. |
 | `Drivers/SupertextContentDisplayDriver` | Button shapes: `SupertextButton_SummaryAdmin` (`Actions:6`, next to *Localizations*) and `SupertextButton_Edit` (`Actions:35`). Only for saved items with a `LocalizationPart`. |
-| `Drivers/SupertextSettingsDisplayDriver` | Settings group `supertext`; validates endpoint (https, or http to loopback) and timeout (30–3600 s); keeps the stored endpoint while `SUPERTEXT_API_ENDPOINT` is set; checks the key with `GET features` after saving. |
+| `Drivers/SupertextSettingsDisplayDriver` | Settings group `supertext`; validates endpoint (https, or http to loopback) and timeout (30–3600 s); keeps the stored endpoint while `SUPERTEXT_API_ENDPOINT` (and the reporting setting while `SUPERTEXT_VERSION_REPORTS`) is set; the language mapping table (one row per culture, merged into the stored `culture=code` lines); after saving runs the key check and the report (`AfterSettingsSavedAsync`) and shows the result as a notification; on GET schedules `OnRequestAsync`. |
 | `Services/SupertextMessages` | Shows a `SupertextException` in the admin's language: the exception's English `Template` is the msgid (context `…Services.SupertextMessages`), `Args` fill its placeholders, the untranslated `Detail` from Supertext is appended. `Message` stays English (logs). |
 | `Localization/de.po`, `fr.po`, `it.po` | UI strings; see *UI strings* below. |
 | `Permissions.cs` | `TranslateWithSupertext` (Administrator, Editor stereotypes), `ManageSupertextSettings` (Administrator). |
@@ -58,27 +68,41 @@ AI file translation API v1, shared with all Supertext plugins. Every call goes t
 3. `GET translate/ai/file/{id}/translation` → translated HTML
 4. `DELETE translate/ai/file/{id}` (files also expire after 24 h)
 
-Header `Authorization: Supertext-Auth-Key <key>` (a pasted prefix is stripped, exactly one is sent). HTTP 429 is retried up to 4 times (`Retry-After`, else 1/2/4/8 s with jitter). Cultures are translated one after the other to stay under the per-second limit. The settings page calls `GET features` (free) to check the key.
+Header `Authorization: Supertext-Auth-Key <key>` (a pasted prefix is stripped, exactly one is sent). HTTP 429 is retried up to 4 times (`Retry-After`, else 1/2/4/8 s with jitter). Cultures are translated one after the other to stay under the per-second limit. The API key check is `GET features` (free), run by the SDK's `CheckApiKeyAsync` (see *Commando Center*).
 
 ## Supertext SDK
 
-The protocol above, the retries, the language codes and the `data-st-id` document come from the official Supertext .NET SDK ([Supertext/Supertext-API-SDK-and-Guide](https://github.com/Supertext/Supertext-API-SDK-and-Guide)). The module compiles a copy from `lib/supertext-sdk/src/` into its own assembly (`<Compile Include=… Link="Sdk/…">` in the `.csproj`), with the namespace changed from `Supertext.Sdk` to `Supertext.OrchardCore.Translation.Sdk`, so sites install nothing extra and another package that references the SDK itself can't clash with it. `lib/supertext-sdk/COMMIT` names the SDK commit and `VERSION` the SDK's package version. The SDK uses nullable annotations; the module keeps nullable off and silences CS8632 for them.
+The protocol above, the retries, the language codes and the `data-st-id` document come from the official Supertext .NET SDK ([Supertext/Supertext-API-SDK-and-Guide](https://github.com/Supertext/Supertext-API-SDK-and-Guide)). The module compiles a copy from `lib/supertext-sdk/src/` (`SdkVersion.cs` and the `V1/` folder) into its own assembly (`<Compile Include="…/src/**/*.cs" Link="Sdk/…">` in the `.csproj`), with the namespace changed from `Supertext.Sdk` to `Supertext.OrchardCore.Translation.Sdk` (and `Supertext.Sdk.V1` to `…Translation.Sdk.V1`), so sites install nothing extra and another package that references the SDK itself can't clash with it. `lib/supertext-sdk/COMMIT` names the SDK commit and `VERSION` the SDK's package version. The SDK uses nullable annotations; the module keeps nullable off and silences CS8632 for them.
 
 - Never edit `lib/supertext-sdk/`. Fix the SDK in its repository, then run `scripts/vendor-sdk.sh [ref]` (default `main`; `SDK_DIR=/path/to/clone` uses a local clone) and the tests.
-- `Api/SupertextClient` turns every SDK error code into a `SupertextException` template (the arms of its switch, read by `LocalizationTests`). A new SDK error code needs an arm there and its entry in `de.po`, `fr.po` and `it.po`.
+- `Api/SupertextClient` turns every SDK error code into a `SupertextException` template (the arms of its switch, read by `LocalizationTests`), keeping the SDK's `Code` and HTTP `Status`. A new SDK error code needs an arm there and its entry in `de.po`, `fr.po` and `it.po`. `unsupported_language` names the culture; `unsupported_feature` is the form of address for a language without it.
 - Segments missing from Supertext's answer (or whose Liquid came back damaged) keep the source text; the translator logs them.
 - The live API answers an unknown language (`xx-YY`) with HTTP 404 `INVALID_LANGUAGE_PAIR`; the SDK reports it as `invalid_language_pair` with both codes, shown as "Supertext does not support this language pair (en → xx-YY)".
 - The demo image copies `lib/` next to `src/` (see `demo/Dockerfile`).
 
 ## Language codes
 
-Supertext wants the **source** as a bare language (`en`) and the **target** as a regional code (`de-DE`, `fr-CH`, `en-US`); a bare target such as `de` is rejected with `INVALID_LANGUAGE_PAIR`. `src/Supertext.OrchardCore.Translation/Api/LanguageCodes.cs` (the SDK's `LanguageCodes` plus the per-culture override; no CMS dependency, unit-tested in `LanguageCodesTests`) turns cultures into Supertext codes:
+Supertext accepts exactly the codes its `GET features` lists (the SDK's `Languages`, from the live API): bare sources (`en`, `de`); targets in one exact form each, regional for German, English, French, Italian and Portuguese (`de-CH`, `en-US`, `pt-BR`), with a script for Chinese and Serbian (`zh-Hans`, `sr-Latn`), a dialect for Swiss German (`gsw-u-sd-chzh`), bare for the others (`es`, `nl`, `sl`). Anything else is HTTP 404 `INVALID_LANGUAGE_PAIR`; formal/informal for a target without it (`en-US`, `rm`, …) is HTTP 400 `FEATURE_ERROR` (`unsupported_feature`). The old default regions (`es-ES`, `sl-SI`, `zh-CN`) are rejected by the live API.
 
-- **Target** (`LanguageCodes.Target`): the **Language codes** mapping (`culture=code`, read by `SupertextConfiguration`) if set, else the culture. It is normalized (`de_ch`/`de-ch` → `de-CH`, `zh-hant` → `zh-Hant`, `es-419` stays, variants and extensions are dropped: `de_DE_formal` → `de-DE`); a code without region gets a default region: ar-SA, bg-BG, cs-CZ, da-DK, de-DE, el-GR, en-US, es-ES, et-EE, fi-FI, fr-FR, hr-HR, hu-HU, it-IT, ja-JP, ko-KR, lt-LT, lv-LV, nb-NO, nl-NL, pl-PL, pt-PT, ro-RO, ru-RU, sk-SK, sl-SI, sr-RS, sv-SE, th-TH, tr-TR, uk-UA, vi-VN, zh-CN (the same table as the Shopify app). Unknown bare codes are sent unchanged, so Supertext's error names them.
-- **Source** (`LanguageCodes.Source`): the bare language of the source culture's override if set, else of the culture (`en-US` → `en`).
-- Translating within one language (`en-US` → `en-GB`) is allowed.
+`Api/LanguageMapping` (no CMS dependency, unit-tested in `LanguageMappingTests`) resolves cultures **without guessing**, with **one** mapping for both directions (the *Language mapping* setting, `SupertextSettings.LanguageMapping`, `culture=code` per line, read by `SupertextConfiguration.Mapping`):
 
-The stand-in (`Tests/Docs/stand-in.mjs`) rejects targets without region like the live API.
+- **Target** (`LanguageMapping.Target` → SDK `Languages.Target`): the mapping wins (sent as it is, even a code the SDK doesn't list yet); else a culture equal to a Supertext code apart from case and `_`/`-` (`de-CH`, `fr_ch` → `fr-CH`, `es`); else `unsupported_language` (a `SupertextException` naming the culture), and nothing is sent. A culture `de` must be mapped (`de-DE`, `de-CH` or `de-AT`).
+- **Source** (`LanguageMapping.Source` → SDK `Languages.Source`): the mapping in its source form (`de` → `de-CH` → `de`), else the culture's language (`en-US` → `en`), else `unsupported_language`. Empty = auto-detect.
+- **Form of address** (`LanguageMapping.PolitenessFor`): sent only for targets with `Languages.SupportsPoliteness` ≠ false. The setting is one value for all languages, so for English, Swiss German, Romansh, Albanian and Serbian the module sends the default tone instead of failing; the settings page says so next to those languages.
+- **Settings page**: one row per site culture with a select of `Languages.Targets` (name + code), pre-selected with the stored mapping, else the exact match; *Not mapped* and a warning when neither exists; a stored code that isn't in the list stays selectable and is flagged. Saving merges the rows into the stored lines (entries for cultures the site no longer has are kept).
+- The demo maps its source culture `en` to `en-US` (`DemoSetupEvents.EnsureLanguageMappingAsync`, only while the mapping is empty); `de-CH`, `fr-CH`, `it-CH` are Supertext codes.
+
+The stand-in (`Tests/Docs/stand-in.mjs`) accepts exactly the live API's target codes and rejects the others with 404 `INVALID_LANGUAGE_PAIR`.
+
+## Commando Center: version reports, key check, ping
+
+Protocol: [Commando-Center-Supertext-Translation](https://github.com/Supertext/Commando-Center-Supertext-Translation) → `docs/DEVELOPER.md` → *Report protocol*. The SDK's `InstallationReporter`, `CheckApiKeyAsync()` and `PingResponse` implement it; `Api/VersionReports` and `Services/SupertextReporting` only supply what Orchard Core knows:
+
+- **Setting:** `SupertextSettings.SendVersionInformation` (default on), combined with `SUPERTEXT_VERSION_REPORTS` by the SDK's `Reporting.ReportsEnabled` (the environment wins; the checkbox is then read-only). Off: no reports, ping 404. `SUPERTEXT_REPORT_URL` sends reports elsewhere (tests, screenshots).
+- **Report fields:** `site_url` = **Settings → General → Base URL** (`ISite.BaseUrl`) if absolute, else the request's scheme, host and path base (tenant prefix); plugin `OrchardCore-Supertext-Translation` with `ModuleVersion.Current`; system `Orchard Core` with the informational version of `OrchardCore.Abstractions` (the running Orchard Core); runtime `.NET` and the SDK version are the SDK's defaults; `callback.url` = `<site>/supertext/ping`.
+- **When:** `AfterSettingsSavedAsync` inside the settings save (key check, `installed`/`settings_saved`; the result is shown as a notification and kept for the page). `OnRequestAsync` on GET of the settings page, the Translate page (GET and POST) and in the localization hook, at most once per request (`SupertextScope.ReportScheduled`), run by `HttpBackgroundJob.ExecuteAfterEndOfRequestAsync` in its own shell scope after the response; it checks the key only when its fingerprint changed and reports `installed`, `upgraded` or `api_key_check`. `AuthenticationFailedAsync` (once per request) when a translation gets `authentication_failure` (401/403). There is no *Test connection* button and no CLI command, so no `testConnection`/`reportCheck`. Runs are serialized per process (a semaphore). Nothing here throws into a request.
+- **State:** the SDK's `ReporterState` JSON in the site document under `SupertextReportingState.Reporter` (`site.Alter<>`; saved with the settings on save, with `UpdateSiteSettingsAsync` in the background job only when it changed). It holds a SHA-256 fingerprint of the key, never the key.
+- **Ping:** `Controllers/PingController`, attribute route `GET supertext/ping` (relative to the tenant), `[AllowAnonymous]`, no antiforgery; status, headers (`Content-Type: application/json`, `Cache-Control: no-store`) and body exactly as `PingResponse.For` returns them. Orchard Core has no output cache for controller actions, so nothing caches it.
 
 ## Local development
 
@@ -92,7 +116,8 @@ export DEMO_ADMIN_EMAIL=admin@example.com DEMO_ADMIN_PASSWORD='Choose-a-pass-1!'
        OrchardCore__OrchardCore_AutoSetup__Tenants__0__AdminUsername=admin \
        OrchardCore__OrchardCore_AutoSetup__Tenants__0__AdminEmail=admin@example.com \
        OrchardCore__OrchardCore_AutoSetup__Tenants__0__AdminPassword='Choose-a-pass-1!' \
-       SUPERTEXT_API_KEY=test SUPERTEXT_API_ENDPOINT=http://127.0.0.1:8765/v1/
+       SUPERTEXT_API_KEY=test SUPERTEXT_API_ENDPOINT=http://127.0.0.1:8765/v1/ \
+       SUPERTEXT_REPORT_URL=http://127.0.0.1:8765/report
 dotnet run --urls http://127.0.0.1:8096
 ```
 
@@ -103,18 +128,21 @@ If a Razor view suddenly fails with errors at impossible positions after editing
 ## Tests
 
 ```bash
-dotnet test tests/Supertext.OrchardCore.Translation.Tests   # SDK wrapper against a fake API, HTML packing, Liquid protection, content walker, settings parsing, module version, UI strings in de/fr/it
+dotnet test tests/Supertext.OrchardCore.Translation.Tests   # SDK wrapper against a fake API, HTML packing, Liquid protection, content walker, settings parsing, language mapping, version reports, module version, UI strings in de/fr/it
 ```
+
+- `LanguageMappingTests`: mapping, exact codes, `unsupported_language` for `de`/`es-ES`/`zh-CN` without mapping, source forms, form of address only where Supertext offers it.
+- `VersionReportsTests` (fake HTTP, never the live API or center): the setting and `SUPERTEXT_VERSION_REPORTS`, site URL, ping answers (200/400/404), one `installed` report with the right fields and without the key, nothing on an unchanged request, `upgraded`, `settings_saved`, a 401/403 reported once, nothing sent with reports off, no exception when the network fails, state stored in a site entity.
 
 CI (`.github/workflows/ci.yml`) builds the module and the demo, runs the tests, checks the demo entrypoint and the Node scripts' syntax.
 
-End to end (manual, before a release): fresh demo with the stand-in (`STAND_IN_PREFIX=1`), sign in as the editor, translate *Translating with Supertext* into all three languages (all texts carry the marker, the link URL doesn't), translate German again (overwrite warning), publish German and open its URL; create the German version of *About this demo* from the *Localizations* menu (the Flow widgets are translated). `Tests/Docs/screenshots.mjs` runs most of this.
+End to end (manual, before a release): fresh demo with the stand-in (`STAND_IN_PREFIX=1`) and `SUPERTEXT_REPORT_URL=http://127.0.0.1:8765/report` (`REPORT_LOG=reports.jsonl` on the stand-in records the reports), check `GET /supertext/ping?challenge=abcdefghijklmnop` (200 with the challenge) and the `installed` report after saving Settings → Supertext, sign in as the editor, translate *Translating with Supertext* into all three languages (all texts carry the marker, the link URL doesn't), translate German again (overwrite warning), publish German and open its URL; create the German version of *About this demo* from the *Localizations* menu (the Flow widgets are translated). `Tests/Docs/screenshots.mjs` runs most of this.
 
 ## Docs screenshots
 
 `docs/images/` is generated by `Tests/Docs/screenshots.mjs` from a **fresh** local demo whose module talks to the stand-in (without `STAND_IN_PREFIX`). The stand-in returns real German for the sample content (`Tests/Docs/sample-de.json`), so the guides never show placeholder text.
 
-Start the demo with `SUPERTEXT_API_ENDPOINT` pointing to the stand-in but **without** `SUPERTEXT_API_KEY`: the script stores a dummy key in **Settings → Supertext** like an administrator (the stand-in accepts any key), and hides the endpoint hint, which would show the local URL.
+Start the demo with `SUPERTEXT_API_ENDPOINT` pointing to the stand-in and `SUPERTEXT_REPORT_URL=http://127.0.0.1:8765/report` (the stand-in answers reports with 202, so screenshots never report to the live center), but **without** `SUPERTEXT_API_KEY`: the script stores a dummy key in **Settings → Supertext** like an administrator (the stand-in accepts any key), and hides the endpoint hint, which would show the local URL.
 
 ```bash
 cd Tests/Docs && npm install && npx playwright install chromium && node stand-in.mjs &
@@ -136,7 +164,7 @@ The public demo is a container built from `demo/Dockerfile`: Orchard Core 3.0.1 
 | `demo/entrypoint.sh` | Links `/app/App_Data` to the volume (`/data/App_Data`); maps `DEMO_ADMIN_*` to the AutoSetup admin (user name = the e-mail's local part, since Orchard user names can't contain `@`) |
 | `demo/SupertextDemo/Program.cs` | `AddOrchardCms()` with the AutoSetup feature and the demo setup; a warm-up request after start runs the first-boot setup without waiting for a visitor |
 | `demo/SupertextDemo/Recipes/supertext-demo.recipe.json` | Setup recipe: features, TheBlogTheme, cultures `en` (default), `de-CH`, `fr-CH`, `it-CH`, roles, the types *Article* (title, subtitle, banner image, HTML body) and *Page* (Flow with *Paragraph* and *Blockquote* widgets), both with Localization and an Autoroute pattern that prefixes the culture (`en/…`, `de/…`), sample content, main menu |
-| `demo/SupertextDemo/DemoSetup/DemoSetupEvents.cs` | On every start of the running tenant: adds missing cultures, gives the *Editor* role what it needs (`LocalizeContent`, `TranslateWithSupertext`, edit/publish/preview/view content, admin access), creates the demo accounts, creates an English sample article if there is none |
+| `demo/SupertextDemo/DemoSetup/DemoSetupEvents.cs` | On every start of the running tenant: adds missing cultures, maps `en` to the Supertext language `en-US` while the language mapping is empty, gives the *Editor* role what it needs (`LocalizeContent`, `TranslateWithSupertext`, edit/publish/preview/view content, admin access), creates the demo accounts, creates an English sample article if there is none |
 | `demo/.env.example` | All variables |
 
 **State:** the SQLite database, media and the data protection keys (which encrypt the stored API key) live in `App_Data` on a Railway volume at `/data`. To reset the demo, delete the files on the volume and redeploy.
@@ -150,7 +178,7 @@ The public demo is a container built from `demo/Dockerfile`: Orchard Core 3.0.1 
 
 Orchard Core's setup screen never appears: AutoSetup installs the site.
 
-**Service variables:** `DEMO_*` (above), `SUPERTEXT_API_KEY`, optional `SUPERTEXT_API_ENDPOINT`, `PORT=8080` (the domain's target port), `RAILWAY_DOCKERFILE_PATH=demo/Dockerfile`. On Railway the `DEMO_*` variables reference the umbraco service's (`${{umbraco.DEMO_ADMIN_EMAIL}}` …), so all .NET demos share one set.
+**Service variables:** `DEMO_*` (above), `SUPERTEXT_API_KEY`, optional `SUPERTEXT_API_ENDPOINT` and `SUPERTEXT_VERSION_REPORTS` (`0` turns the version reports off), `PORT=8080` (the domain's target port), `RAILWAY_DOCKERFILE_PATH=demo/Dockerfile`. On Railway the `DEMO_*` variables reference the umbraco service's (`${{umbraco.DEMO_ADMIN_EMAIL}}` …), so all .NET demos share one set.
 
 **Run it locally:**
 

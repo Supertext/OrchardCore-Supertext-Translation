@@ -10,6 +10,8 @@
  * The demo must run with SUPERTEXT_API_ENDPOINT pointing to the stand-in and WITHOUT
  * SUPERTEXT_API_KEY: the script stores a dummy key in Settings → Supertext like an
  * administrator would. The endpoint hint (a local URL) is hidden in the settings shot.
+ * Start it with SUPERTEXT_REPORT_URL pointing to the stand-in's /report, so saving the
+ * settings never sends a version report to the live Supertext Commando Center.
  */
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
@@ -56,7 +58,8 @@ if (await admin.locator('input[name$="ApiKey"]').count()) {
 await admin.click('.ta-content button[type=submit].btn-primary');
 await admin.waitForLoadState('networkidle');
 await admin.evaluate(() => document.querySelectorAll('.supertext-endpoint-env').forEach((e) => e.remove()));
-await admin.setViewportSize({ width: 1280, height: 1150 });
+// The page now also shows the API key check, the language mapping table and the version report setting.
+await admin.setViewportSize({ width: 1280, height: 1500 });
 await shot(admin, 'settings.png', '.ta-content');
 
 await admin.setViewportSize({ width: 1280, height: 860 });

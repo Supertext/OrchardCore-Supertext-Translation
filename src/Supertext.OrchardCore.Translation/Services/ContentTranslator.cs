@@ -64,7 +64,9 @@ public sealed class ContentTranslator(
         var targetCode = SupertextConfiguration.TargetLanguageCode(settings, targetCulture);
         var sourceCode = SupertextConfiguration.SourceLanguageCode(settings, sourceCulture);
 
-        var translations = await client.TranslateSegmentsAsync(connection, segments.Select(s => s.Segment).ToList(), targetCode, sourceCode, settings.Politeness, ct);
+        var politeness = LanguageMapping.PolitenessFor(targetCode, settings.Politeness);
+
+        var translations = await client.TranslateSegmentsAsync(connection, segments.Select(s => s.Segment).ToList(), targetCode, sourceCode, politeness, ct);
         for (var i = 0; i < segments.Count; i++)
         {
             if (translations.TryGetValue(i, out var text) && !string.IsNullOrWhiteSpace(text))

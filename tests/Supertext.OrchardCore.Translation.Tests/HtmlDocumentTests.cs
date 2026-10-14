@@ -59,12 +59,4 @@ public class HtmlDocumentTests
     [InlineData("abc123", "abc123")]
     public void Api_key_prefix_is_stripped(string input, string expected)
         => Assert.Equal(expected, SupertextClient.NormalizeApiKey(input));
-
-    [Theory]
-    [InlineData("de-CH", "de")]
-    [InlineData("en", "en")]
-    [InlineData("zh_Hant_TW", "zh")]
-    [InlineData("", "")]
-    public void Source_language_is_the_primary_subtag(string culture, string expected)
-        => Assert.Equal(expected, SupertextClient.SourceLanguageCode(culture));
 }

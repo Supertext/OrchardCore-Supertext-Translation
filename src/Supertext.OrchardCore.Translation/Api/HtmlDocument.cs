@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
-using SdkHtmlDocument = Supertext.OrchardCore.Translation.Sdk.HtmlDocument;
-using SdkSegment = Supertext.OrchardCore.Translation.Sdk.Segment;
+using SdkHtmlDocument = Supertext.OrchardCore.Translation.Sdk.V1.HtmlDocument;
+using SdkSegment = Supertext.OrchardCore.Translation.Sdk.V1.Segment;
 
 namespace Supertext.OrchardCore.Translation.Api;
 

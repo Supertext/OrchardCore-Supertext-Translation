@@ -31,6 +31,7 @@ public sealed class AdminController(
     SupertextScope scope,
     INotifier notifier,
     SupertextMessages messages,
+    SupertextReporting reporting,
     IHtmlLocalizer<AdminController> htmlLocalizer,
     ILogger<AdminController> logger) : Controller
 {
@@ -49,6 +50,7 @@ public sealed class AdminController(
         {
             return Forbid();
         }
+        await reporting.OnRequestAsync();
         return View(await BuildModelAsync(source, returnUrl, []));
     }
 
@@ -67,6 +69,7 @@ public sealed class AdminController(
             return Forbid();
         }
 
+        await reporting.OnRequestAsync();
         var model = await BuildModelAsync(source, returnUrl, cultures ?? []);
         var selected = model.Targets.Where(t => t.Selected).ToList();
         if (selected.Count == 0)
@@ -88,6 +91,7 @@ public sealed class AdminController(
         scope.SuppressAutomaticTranslation = true;
 
         // One language after the other: Supertext limits requests per second per key.
+        var keyRejected = false;
         foreach (var target in selected)
         {
             try
@@ -121,6 +125,11 @@ public sealed class AdminController(
             {
                 logger.LogWarning(e, "Supertext translation of {ContentItemId} into {Culture} failed.", source.ContentItemId, target.Culture);
                 await notifier.ErrorAsync(H["{0}: not translated. {1}", target.CultureName, messages.Describe(e)]);
+                if (e.Code == SupertextException.AuthenticationFailure && !keyRejected)
+                {
+                    keyRejected = true;
+                    await reporting.AuthenticationFailedAsync(e.Status);
+                }
             }
             catch (InvalidOperationException e)
             {

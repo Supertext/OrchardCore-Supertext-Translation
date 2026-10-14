@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Supertext.OrchardCore.Translation.Sdk;
+namespace Supertext.OrchardCore.Translation.Sdk.V1;
 
 /// <summary>
 /// One text to translate. Plain text is escaped and its line breaks become <c>&lt;br&gt;</c>;

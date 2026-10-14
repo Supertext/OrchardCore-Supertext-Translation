@@ -32,9 +32,7 @@ public sealed class SupertextConfiguration(
     public async Task<SupertextConnection> GetConnectionAsync()
     {
         var settings = await GetSettingsAsync();
-        var apiKey = FirstNonEmpty(ApiKeyFromEnvironment, Unprotect(settings.ProtectedApiKey));
-        var endpoint = FirstNonEmpty(EndpointFromEnvironment, settings.Endpoint, SupertextClient.DefaultEndpoint);
-        return new SupertextConnection(endpoint, SupertextClient.NormalizeApiKey(apiKey), PollTimeoutSeconds: settings.PollTimeoutSeconds > 0 ? settings.PollTimeoutSeconds : 300);
+        return new SupertextConnection(EndpointInEffect(settings), ApiKeyInEffect(settings), PollTimeoutSeconds: settings.PollTimeoutSeconds > 0 ? settings.PollTimeoutSeconds : 300);
     }
 
     public string Protect(string apiKey)
@@ -58,26 +56,27 @@ public sealed class SupertextConfiguration(
         }
     }
 
-    /// <summary>The target code sent to Supertext for an Orchard Core culture: the mapping, else the culture; with a region (de → de-DE).</summary>
+    /// <summary>The API key in effect for these settings: the environment/configuration, else the stored one (prefix stripped; empty if none).</summary>
+    public string ApiKeyInEffect(SupertextSettings settings)
+        => SupertextClient.NormalizeApiKey(FirstNonEmpty(ApiKeyFromEnvironment, Unprotect(settings.ProtectedApiKey)));
+
+    /// <summary>The endpoint in effect for these settings: the environment/configuration, else the stored one, else the live API.</summary>
+    public string EndpointInEffect(SupertextSettings settings)
+        => FirstNonEmpty(EndpointFromEnvironment, settings.Endpoint, SupertextClient.DefaultEndpoint);
+
+    /// <summary>The Language mapping setting (culture → Supertext code).</summary>
+    public static IReadOnlyDictionary<string, string> Mapping(SupertextSettings settings)
+        => LanguageMapping.Parse(settings.LanguageMapping);
+
+    /// <summary>The target code sent to Supertext for an Orchard Core culture: the mapping, else the culture if it is a Supertext code (no default regions).</summary>
+    /// <exception cref="SupertextException"><c>unsupported_language</c> when the culture has no Supertext language.</exception>
     public static string TargetLanguageCode(SupertextSettings settings, string culture)
-        => LanguageCodes.Target(culture, MappedCode(settings, culture));
+        => LanguageMapping.Target(culture, Mapping(settings));
 
-    /// <summary>The source code sent to Supertext for an Orchard Core culture: the bare language of the mapping, else of the culture (en-US → en).</summary>
+    /// <summary>The source code sent to Supertext for an Orchard Core culture: the mapping in its source form, else the culture's language (en-US → en).</summary>
+    /// <exception cref="SupertextException"><c>unsupported_language</c> when the culture has no Supertext language.</exception>
     public static string SourceLanguageCode(SupertextSettings settings, string culture)
-        => LanguageCodes.Source(culture, MappedCode(settings, culture));
-
-    private static string MappedCode(SupertextSettings settings, string culture)
-    {
-        foreach (var line in (settings.LanguageMapping ?? string.Empty).Split('\n'))
-        {
-            var pair = line.Split('=', 2);
-            if (pair.Length == 2 && pair[0].Trim().Equals(culture, StringComparison.OrdinalIgnoreCase) && pair[1].Trim() != string.Empty)
-            {
-                return pair[1].Trim();
-            }
-        }
-        return null;
-    }
+        => LanguageMapping.Source(culture, Mapping(settings));
 
     public static IEnumerable<string> ExcludedFields(SupertextSettings settings)
         => (settings.ExcludedFields ?? string.Empty).Split('\n', ',').Select(e => e.Trim()).Where(e => e != string.Empty);

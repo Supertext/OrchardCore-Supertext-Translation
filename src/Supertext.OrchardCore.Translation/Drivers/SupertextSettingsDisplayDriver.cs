@@ -10,19 +10,24 @@ using OrchardCore.Localization;
 using OrchardCore.Mvc.ModelBinding;
 using OrchardCore.Settings;
 using Supertext.OrchardCore.Translation.Api;
+using ApiKeyCheckStatus = Supertext.OrchardCore.Translation.Sdk.V1.ApiKeyCheckStatus;
 using Supertext.OrchardCore.Translation.Services;
 using Supertext.OrchardCore.Translation.Settings;
 using Supertext.OrchardCore.Translation.ViewModels;
 
 namespace Supertext.OrchardCore.Translation.Drivers;
 
-/// <summary>Settings → Supertext.</summary>
+/// <summary>
+/// Settings → Supertext. Saving runs the automatic API key check and the version report
+/// (<see cref="SupertextReporting.AfterSettingsSavedAsync"/>); opening the page runs
+/// <see cref="SupertextReporting.OnRequestAsync"/> after the response.
+/// </summary>
 public sealed class SupertextSettingsDisplayDriver(
     SupertextConfiguration configuration,
-    SupertextClient client,
+    SupertextReporting reporting,
+    KeyCheckMessages keyCheckMessages,
     ILocalizationService localizationService,
     INotifier notifier,
-    SupertextMessages messages,
     IHttpContextAccessor httpContextAccessor,
     IAuthorizationService authorizationService,
     IHtmlLocalizer<SupertextSettingsDisplayDriver> htmlLocalizer,
@@ -44,6 +49,12 @@ public sealed class SupertextSettingsDisplayDriver(
 
         var cultures = await localizationService.GetSupportedCulturesAsync();
         var environmentEndpoint = configuration.EndpointFromEnvironment;
+        var mapping = SupertextConfiguration.Mapping(settings);
+        var keyCheck = SupertextReporting.LoadState(site).KeyCheck;
+        if (HttpMethods.IsGet(httpContextAccessor.HttpContext?.Request.Method ?? string.Empty))
+        {
+            await reporting.OnRequestAsync();
+        }
 
         return Initialize<SupertextSettingsViewModel>("SupertextSettings_Edit", model =>
         {
@@ -55,10 +66,13 @@ public sealed class SupertextSettingsDisplayDriver(
                 : string.IsNullOrWhiteSpace(settings.Endpoint) ? SupertextClient.DefaultEndpoint : settings.Endpoint;
             model.Politeness = settings.Politeness ?? "default";
             model.TranslateNewLocalizations = settings.TranslateNewLocalizations;
-            model.LanguageMapping = settings.LanguageMapping;
+            model.Mappings = cultures.Select(culture => MappingRow(culture, mapping, settings.Politeness)).ToList();
+            model.TargetLanguages = LanguageMapping.Targets;
             model.ExcludedFields = settings.ExcludedFields;
             model.PollTimeoutSeconds = settings.PollTimeoutSeconds;
-            model.Cultures = cultures;
+            model.SendVersionInformation = settings.SendVersionInformation;
+            model.VersionReportsFromEnvironment = VersionReports.EnvironmentOverride();
+            model.KeyCheck = keyCheck;
             model.ModuleVersion = ModuleVersion.Current;
             model.ModuleReleaseUrl = ModuleVersion.ReleaseUrl(ModuleVersion.Current);
         }).Location("Content:2").OnGroup(SettingsGroupId);
@@ -101,11 +115,27 @@ public sealed class SupertextSettingsDisplayDriver(
             }
             settings.Politeness = model.Politeness is "more" or "less" ? model.Politeness : "default";
             settings.TranslateNewLocalizations = model.TranslateNewLocalizations;
-            settings.LanguageMapping = model.LanguageMapping?.Trim();
+            settings.LanguageMapping = MergeMapping(settings.LanguageMapping, model.Mappings);
             settings.ExcludedFields = model.ExcludedFields?.Trim();
             settings.PollTimeoutSeconds = model.PollTimeoutSeconds;
+            // A disabled checkbox (SUPERTEXT_VERSION_REPORTS set) isn't posted: keep the stored value.
+            if (VersionReports.EnvironmentOverride() is null)
+            {
+                settings.SendVersionInformation = model.SendVersionInformation;
+            }
 
-            await CheckConnectionAsync(settings);
+            // Automatic API key check and version report; never blocks saving.
+            var result = await reporting.AfterSettingsSavedAsync(site, settings);
+            if (result.Check is { } check)
+            {
+                var text = keyCheckMessages.Describe(check);
+                await (check.Status switch
+                {
+                    ApiKeyCheckStatus.Ok => notifier.SuccessAsync(text),
+                    ApiKeyCheckStatus.Invalid => notifier.ErrorAsync(text),
+                    _ => notifier.WarningAsync(text),
+                });
+            }
         }
 
         return await EditAsync(site, settings, context);
@@ -116,25 +146,39 @@ public sealed class SupertextSettingsDisplayDriver(
         => Uri.TryCreate(endpoint, UriKind.Absolute, out var uri)
             && (uri.Scheme == Uri.UriSchemeHttps || (uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback));
 
-    /// <summary>Cost-free check of the key in effect after saving.</summary>
-    private async Task CheckConnectionAsync(SupertextSettings settings)
+    /// <summary>A row of the Language mapping table: the stored code, else the Supertext code equal to the culture.</summary>
+    private static LanguageMappingRow MappingRow(string culture, IReadOnlyDictionary<string, string> mapping, string politeness)
     {
-        var apiKey = configuration.ApiKeyFromEnvironment != string.Empty ? configuration.ApiKeyFromEnvironment : configuration.Unprotect(settings.ProtectedApiKey);
-        if (string.IsNullOrWhiteSpace(apiKey))
+        var code = mapping.TryGetValue(culture, out var mapped) ? mapped : LanguageMapping.MatchTarget(culture) ?? string.Empty;
+        return new LanguageMappingRow
         {
-            await notifier.WarningAsync(H["No Supertext API key is set yet, so content can't be translated. Generate one at <a href=\"{0}\" target=\"_blank\" rel=\"noopener\">supertext.com → Integrations → API</a> (requires the Admin role; no account yet? <a href=\"{1}\" target=\"_blank\" rel=\"noopener\">create one</a>).", "https://www.supertext.com/en/integrations/api", "https://www.supertext.com/person/en/account/signin"]);
-            return;
-        }
-        var endpoint = configuration.EndpointFromEnvironment != string.Empty ? configuration.EndpointFromEnvironment
-            : string.IsNullOrWhiteSpace(settings.Endpoint) ? SupertextClient.DefaultEndpoint : settings.Endpoint;
-        try
+            Culture = culture,
+            CultureName = CultureNames.Get(culture),
+            Code = code,
+            UnknownCode = code != string.Empty && LanguageMapping.MatchTarget(code) is null,
+            PolitenessUnavailable = code != string.Empty && politeness is "more" or "less" && LanguageMapping.SupportsPoliteness(code) == false,
+        };
+    }
+
+    /// <summary>The posted rows over the stored mapping; entries for cultures the site no longer has are kept.</summary>
+    private static string MergeMapping(string stored, IEnumerable<LanguageMappingRow> rows)
+    {
+        var mapping = new Dictionary<string, string>(LanguageMapping.Parse(stored), StringComparer.OrdinalIgnoreCase);
+        foreach (var row in rows ?? [])
         {
-            await client.ValidateApiKeyAsync(new SupertextConnection(endpoint, apiKey));
-            await notifier.SuccessAsync(H["Connected to Supertext. The API key works."]);
+            if (string.IsNullOrWhiteSpace(row?.Culture))
+            {
+                continue;
+            }
+            if (string.IsNullOrWhiteSpace(row.Code))
+            {
+                mapping.Remove(row.Culture.Trim());
+            }
+            else
+            {
+                mapping[row.Culture.Trim()] = row.Code.Trim();
+            }
         }
-        catch (SupertextException e)
-        {
-            await notifier.ErrorAsync(H["The settings were saved, but Supertext could not be reached with them: {0}", messages.Describe(e)]);
-        }
+        return LanguageMapping.Serialize(mapping);
     }
 }

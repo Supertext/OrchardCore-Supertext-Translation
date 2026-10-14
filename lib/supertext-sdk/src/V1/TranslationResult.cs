@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Supertext.OrchardCore.Translation.Sdk;
+namespace Supertext.OrchardCore.Translation.Sdk.V1;
 
 /// <summary>
 /// Key → translated text, enumerated in the order the segments were given (a plain

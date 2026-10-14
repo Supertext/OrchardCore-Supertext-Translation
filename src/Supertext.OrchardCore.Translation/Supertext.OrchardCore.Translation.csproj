@@ -37,8 +37,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The Supertext SDK, bundled (namespace Supertext.OrchardCore.Translation.Sdk): see lib/supertext-sdk/README.md -->
-    <Compile Include="../../lib/supertext-sdk/src/*.cs" Link="Sdk/%(Filename)%(Extension)" />
+    <!-- The Supertext SDK, bundled (namespace Supertext.OrchardCore.Translation.Sdk and .Sdk.V1): see lib/supertext-sdk/README.md -->
+    <Compile Include="../../lib/supertext-sdk/src/**/*.cs" Link="Sdk/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

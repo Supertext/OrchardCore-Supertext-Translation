@@ -8,10 +8,19 @@ namespace Supertext.OrchardCore.Translation.Api;
 /// language (msgids of <c>Localization/*.po</c>). <see cref="Exception.Message"/> is the
 /// English text with the arguments and the untranslated <see cref="Detail"/> from Supertext (logs).
 /// </summary>
-public sealed class SupertextException(string template, object[] args = null, string detail = null, Exception inner = null)
+public sealed class SupertextException(string template, object[] args = null, string detail = null, Exception inner = null, string code = null, int? status = null)
     : Exception(Format(template, args, detail), inner)
 {
     public string Template { get; } = template;
+
+    /// <summary>The SDK's code for a rejected API key (HTTP 401/403).</summary>
+    public const string AuthenticationFailure = "authentication_failure";
+
+    /// <summary>The SDK's error code (<c>authentication_failure</c>, <c>unsupported_language</c>, …), null for the module's own errors.</summary>
+    public string Code { get; } = code;
+
+    /// <summary>The HTTP status Supertext answered with, if any.</summary>
+    public int? Status { get; } = status;
 
     public object[] Args { get; } = args ?? [];
 
@@ -30,22 +39,22 @@ public sealed record SupertextConnection(string Endpoint, string ApiKey, int Pol
 
 /// <summary>
 /// Supertext AI file translation (https://api.supertext.com/v1/) through the Supertext SDK
-/// bundled in <c>lib/supertext-sdk</c> (namespace <c>Supertext.OrchardCore.Translation.Sdk</c>,
+/// bundled in <c>lib/supertext-sdk</c> (namespace <c>Supertext.OrchardCore.Translation.Sdk.V1</c>,
 /// compiled into this module): upload one HTML document, poll its status, download the
-/// translation, delete the file; the auth header, HTTP 429 retries and language codes are the
-/// SDK's too. Requests go through the module's <see cref="HttpClient"/>. SDK errors come out as
+/// translation, delete the file; the auth header and HTTP 429 retries are the SDK's too.
+/// Language codes are resolved before (<see cref="LanguageMapping"/>) and sent as they are. Requests go through the module's <see cref="HttpClient"/>. SDK errors come out as
 /// this module's <see cref="SupertextException"/>, whose template <c>SupertextMessages</c> shows
 /// in the admin language.
 /// </summary>
 public sealed partial class SupertextClient(HttpClient http)
 {
-    public const string DefaultEndpoint = Sdk.SupertextClient.LiveBaseUrl;
+    public const string DefaultEndpoint = Sdk.V1.SupertextClient.LiveBaseUrl;
 
     /// <summary>Documents above this size are split into several requests.</summary>
-    public const int MaxDocumentCharacters = Sdk.SupertextClient.DefaultMaxCharacters;
+    public const int MaxDocumentCharacters = Sdk.V1.SupertextClient.DefaultMaxCharacters;
 
-    /// <param name="targetLanguage">any form; sent as a regional code ("de" → "de-DE")</param>
-    /// <param name="sourceLanguage">culture of the source ("en-US"); sent as its bare language, empty for auto-detection</param>
+    /// <param name="targetLanguage">Supertext target code ("de-CH", "es"; see <see cref="LanguageMapping.Target"/>)</param>
+    /// <param name="sourceLanguage">Supertext source code ("en"), empty for auto-detection</param>
     /// <param name="politeness">"default", "more" or "less"</param>
     public Task<string> TranslateDocumentAsync(SupertextConnection connection, string html, string targetLanguage, string sourceLanguage, string politeness, CancellationToken ct = default)
         => CallAsync(() => CreateSdkClient(connection).TranslateHtmlAsync(html, targetLanguage, NullIfEmpty(sourceLanguage), ToPoliteness(politeness), ct));
@@ -57,14 +66,14 @@ public sealed partial class SupertextClient(HttpClient http)
     public async Task<Dictionary<int, string>> TranslateSegmentsAsync(SupertextConnection connection, IReadOnlyList<HtmlDocument.Segment> segments, string targetLanguage, string sourceLanguage, string politeness, CancellationToken ct = default)
     {
         var prepared = segments.Select(HtmlDocument.ToSdk).ToList();
-        var keyed = prepared.Select((p, i) => new KeyValuePair<string, Sdk.Segment>(i.ToString(System.Globalization.CultureInfo.InvariantCulture), p.Segment));
+        var keyed = prepared.Select((p, i) => new KeyValuePair<string, Sdk.V1.Segment>(i.ToString(System.Globalization.CultureInfo.InvariantCulture), p.Segment));
         var result = new Dictionary<int, string>();
         var client = CreateSdkClient(connection);
-        foreach (var batch in Sdk.SupertextClient.Batches(keyed, MaxDocumentCharacters))
+        foreach (var batch in Sdk.V1.SupertextClient.Batches(keyed, MaxDocumentCharacters))
         {
             var batchSegments = batch.Select(pair => pair.Value).ToList();
-            var translated = await CallAsync(() => client.TranslateHtmlAsync(Sdk.HtmlDocument.Build(batchSegments), targetLanguage, NullIfEmpty(sourceLanguage), ToPoliteness(politeness), ct));
-            var parsed = Sdk.HtmlDocument.Parse(translated, batchSegments);
+            var translated = await CallAsync(() => client.TranslateHtmlAsync(Sdk.V1.HtmlDocument.Build(batchSegments), targetLanguage, NullIfEmpty(sourceLanguage), ToPoliteness(politeness), ct));
+            var parsed = Sdk.V1.HtmlDocument.Parse(translated, batchSegments);
             for (var i = 0; i < batch.Count; i++)
             {
                 var index = int.Parse(batch[i].Key, System.Globalization.CultureInfo.InvariantCulture);
@@ -78,26 +87,22 @@ public sealed partial class SupertextClient(HttpClient http)
         return result;
     }
 
-    /// <summary>Cost-free check of the API key.</summary>
-    public Task ValidateApiKeyAsync(SupertextConnection connection, CancellationToken ct = default)
-        => CallAsync(async () =>
+    /// <summary>Options for the SDK client that runs the key check of the version reports (same endpoint and user agent).</summary>
+    public static Sdk.V1.SupertextClientOptions KeyCheckOptions(string endpoint)
+        => new()
         {
-            await CreateSdkClient(connection).ValidateApiKeyAsync(ct);
-            return true;
-        });
+            BaseUrl = string.IsNullOrWhiteSpace(endpoint) ? DefaultEndpoint : endpoint.Trim(),
+            UserAgent = "OrchardCore-Supertext-Translation/" + ModuleVersionText,
+        };
 
     /// <summary>Removes a pasted "Supertext-Auth-Key " prefix (Supertext shows the key with it).</summary>
     public static string NormalizeApiKey(string apiKey)
         => AuthPrefix().Replace(apiKey ?? string.Empty, string.Empty).Trim();
 
-    /// <summary>Supertext expects the source as a bare language ("de", not "de-CH").</summary>
-    public static string SourceLanguageCode(string culture)
-        => string.IsNullOrWhiteSpace(culture) ? string.Empty : Sdk.LanguageCodes.Source(culture);
-
-    private Sdk.SupertextClient CreateSdkClient(SupertextConnection connection)
+    private Sdk.V1.SupertextClient CreateSdkClient(SupertextConnection connection)
     {
         var endpoint = string.IsNullOrWhiteSpace(connection.Endpoint) ? DefaultEndpoint : connection.Endpoint.Trim();
-        return new Sdk.SupertextClient(NormalizeApiKey(connection.ApiKey), new Sdk.SupertextClientOptions
+        return new Sdk.V1.SupertextClient(NormalizeApiKey(connection.ApiKey), new Sdk.V1.SupertextClientOptions
         {
             BaseUrl = endpoint,
             PollInterval = TimeSpan.FromSeconds(Math.Max(1, connection.PollIntervalSeconds)),
@@ -112,11 +117,11 @@ public sealed partial class SupertextClient(HttpClient http)
 
     private static string NullIfEmpty(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
-    private static Sdk.Politeness ToPoliteness(string politeness) => politeness switch
+    private static Sdk.V1.Politeness ToPoliteness(string politeness) => politeness switch
     {
-        "more" => Sdk.Politeness.More,
-        "less" => Sdk.Politeness.Less,
-        _ => Sdk.Politeness.Default,
+        "more" => Sdk.V1.Politeness.More,
+        "less" => Sdk.V1.Politeness.Less,
+        _ => Sdk.V1.Politeness.Default,
     };
 
     private static async Task<T> CallAsync<T>(Func<Task<T>> call)
@@ -125,7 +130,7 @@ public sealed partial class SupertextClient(HttpClient http)
         {
             return await call();
         }
-        catch (Sdk.SupertextException e)
+        catch (Sdk.V1.SupertextException e)
         {
             throw FromSdk(e);
         }
@@ -135,34 +140,39 @@ public sealed partial class SupertextClient(HttpClient http)
     /// The module's message for an SDK error code. Keep the switch arms literal:
     /// <c>LocalizationTests</c> reads them to check the .po files.
     /// </summary>
-    private static SupertextException FromSdk(Sdk.SupertextException e)
+    internal static SupertextException FromSdk(Sdk.V1.SupertextException e)
     {
         var template = e.Code switch
         {
-            Sdk.SupertextErrorCodes.MissingApiKey => "No Supertext API key configured (Settings → Supertext, or SUPERTEXT_API_KEY). No Supertext account yet? Create one at https://www.supertext.com/person/en/account/signin. Generate your API key at https://www.supertext.com/en/integrations/api (supertext.com → Integrations → API, requires the Admin role).",
-            Sdk.SupertextErrorCodes.AuthenticationFailure => "Authentication failed. Please check the Supertext API key. No Supertext account yet? Create one at https://www.supertext.com/person/en/account/signin. Generate your API key at https://www.supertext.com/en/integrations/api (supertext.com → Integrations → API, requires the Admin role).",
-            Sdk.SupertextErrorCodes.InvalidLanguagePair => "Supertext does not support this language pair ({0} → {1}). Check the language codes under Settings → Supertext.",
-            Sdk.SupertextErrorCodes.NotFound => "The requested Supertext resource was not found.",
-            Sdk.SupertextErrorCodes.PayloadTooLarge => "The content is too large for Supertext to translate in one go.",
-            Sdk.SupertextErrorCodes.TooManyRequests => "Too many requests to Supertext. Please try again shortly.",
-            Sdk.SupertextErrorCodes.ServiceUnavailable => "The Supertext service is currently unavailable.",
-            Sdk.SupertextErrorCodes.TransportError => "Could not reach Supertext.",
-            Sdk.SupertextErrorCodes.NoFileId => "Supertext did not return a file id.",
-            Sdk.SupertextErrorCodes.TranslationError => "Supertext failed to translate the document.",
-            Sdk.SupertextErrorCodes.QuotaExceeded => "Your Supertext translation limit is exceeded.",
-            Sdk.SupertextErrorCodes.FileDeleted => "The Supertext file was deleted before it could be downloaded.",
-            Sdk.SupertextErrorCodes.Timeout => "Timed out waiting for the Supertext translation.",
-            Sdk.SupertextErrorCodes.IncompleteResponse => "The translated document was empty.",
+            Sdk.V1.SupertextErrorCodes.MissingApiKey => "No Supertext API key configured (Settings → Supertext, or SUPERTEXT_API_KEY). No Supertext account yet? Create one at https://www.supertext.com/person/en/account/signin. Generate your API key at https://www.supertext.com/en/integrations/api (supertext.com → Integrations → API, requires the Admin role).",
+            Sdk.V1.SupertextErrorCodes.AuthenticationFailure => "Authentication failed. Please check the Supertext API key. No Supertext account yet? Create one at https://www.supertext.com/person/en/account/signin. Generate your API key at https://www.supertext.com/en/integrations/api (supertext.com → Integrations → API, requires the Admin role).",
+            Sdk.V1.SupertextErrorCodes.InvalidLanguagePair => "Supertext does not support this language pair ({0} → {1}). Check the language mapping under Settings → Supertext.",
+            Sdk.V1.SupertextErrorCodes.UnsupportedLanguage => "The language {0} has no Supertext language yet. Ask your administrator to map it under Settings → Supertext → Language mapping.",
+            Sdk.V1.SupertextErrorCodes.UnsupportedFeature => "Supertext offers no formal or informal tone for this language. Ask your administrator to set the form of address under Settings → Supertext to As in the source.",
+            Sdk.V1.SupertextErrorCodes.NotFound => "The requested Supertext resource was not found.",
+            Sdk.V1.SupertextErrorCodes.PayloadTooLarge => "The content is too large for Supertext to translate in one go.",
+            Sdk.V1.SupertextErrorCodes.TooManyRequests => "Too many requests to Supertext. Please try again shortly.",
+            Sdk.V1.SupertextErrorCodes.ServiceUnavailable => "The Supertext service is currently unavailable.",
+            Sdk.V1.SupertextErrorCodes.TransportError => "Could not reach Supertext.",
+            Sdk.V1.SupertextErrorCodes.NoFileId => "Supertext did not return a file id.",
+            Sdk.V1.SupertextErrorCodes.TranslationError => "Supertext failed to translate the document.",
+            Sdk.V1.SupertextErrorCodes.QuotaExceeded => "Your Supertext translation limit is exceeded.",
+            Sdk.V1.SupertextErrorCodes.FileDeleted => "The Supertext file was deleted before it could be downloaded.",
+            Sdk.V1.SupertextErrorCodes.Timeout => "Timed out waiting for the Supertext translation.",
+            Sdk.V1.SupertextErrorCodes.IncompleteResponse => "The translated document was empty.",
             _ => "Supertext answered with HTTP {0}.",
         };
         object[] args = e.Code switch
         {
-            Sdk.SupertextErrorCodes.InvalidLanguagePair => [string.IsNullOrEmpty(e.SourceLang) ? "?" : e.SourceLang, string.IsNullOrEmpty(e.TargetLang) ? "?" : e.TargetLang],
-            Sdk.SupertextErrorCodes.UnexpectedStatus => [e.Status ?? 0],
+            Sdk.V1.SupertextErrorCodes.InvalidLanguagePair => [string.IsNullOrEmpty(e.SourceLang) ? "?" : e.SourceLang, string.IsNullOrEmpty(e.TargetLang) ? "?" : e.TargetLang],
+            Sdk.V1.SupertextErrorCodes.UnsupportedLanguage => [FirstNonEmpty(e.TargetLang, e.SourceLang, "?")],
+            Sdk.V1.SupertextErrorCodes.UnexpectedStatus => [e.Status ?? 0],
             _ => [],
         };
-        return new SupertextException(template, args, e.Detail, e);
+        return new SupertextException(template, args, e.Detail, e, e.Code, e.Status);
     }
+
+    private static string FirstNonEmpty(params string[] values) => values.First(v => !string.IsNullOrEmpty(v));
 
     [GeneratedRegex(@"^\s*Supertext-Auth-Key\s+", RegexOptions.IgnoreCase)]
     private static partial Regex AuthPrefix();
