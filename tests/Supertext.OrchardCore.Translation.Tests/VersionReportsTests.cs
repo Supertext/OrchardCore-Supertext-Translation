@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using OrchardCore.Entities;
 using Supertext.OrchardCore.Translation.Api;
+using Supertext.OrchardCore.Translation.PluginHealth;
 using Supertext.OrchardCore.Translation.Sdk.V1;
 using Supertext.OrchardCore.Translation.Services;
 using Xunit;
@@ -71,7 +72,7 @@ public class VersionReportsTests
 
         Assert.Equal(ReportEvents.Installed, first.Event);
         Assert.True(first.Sent);
-        Assert.Equal(ApiKeyCheckStatus.Ok, first.Check!.Status);
+        Assert.Equal(KeyCheckStatus.Ok, first.Check!.Status);
         Assert.Equal(["GET https://api.test/v1/features", "POST " + ReportUrl], http.Requests);
         var report = JsonNode.Parse(http.Reports.Single())!;
         Assert.Equal("installed", report["event"]!.GetValue<string>());
@@ -82,6 +83,7 @@ public class VersionReportsTests
         Assert.Equal("3.0.1", report["system"]!["version"]!.GetValue<string>());
         Assert.Equal("https://www.example.ch/supertext/ping", report["callback"]!["url"]!.GetValue<string>());
         Assert.True(report["api_key_configured"]!.GetValue<bool>());
+        Assert.Equal(Supertext.OrchardCore.Translation.Sdk.SdkInfo.Version, report["sdk_version"]!.GetValue<string>());
         Assert.DoesNotContain(Key, http.Reports.Single());
 
         // Same versions, same key: nothing to do, no request at all.
@@ -102,7 +104,7 @@ public class VersionReportsTests
         var context = Context(http, enabled: true);
         var installed = await VersionReports.RunAsync(ReporterAction.AfterSettingsSaved, context, ReporterState.Empty, Key);
         Assert.Equal(ReportEvents.Installed, installed.Event);
-        Assert.Equal(ApiKeyCheckStatus.Invalid, installed.Check!.Status);
+        Assert.Equal(KeyCheckStatus.Invalid, installed.Check!.Status);
 
         var saved = await VersionReports.RunAsync(ReporterAction.AfterSettingsSaved, context, installed.State, Key);
         Assert.Equal(ReportEvents.SettingsSaved, saved.Event);
@@ -114,7 +116,7 @@ public class VersionReportsTests
     {
         var http = new FakeHttp();
         var result = await VersionReports.RunAsync(ReporterAction.AfterSettingsSaved, Context(http, enabled: false), ReporterState.Empty, "");
-        Assert.Equal(ApiKeyCheckStatus.Missing, result.Check!.Status);
+        Assert.Equal(KeyCheckStatus.Missing, result.Check!.Status);
         Assert.Empty(http.Requests);
     }
 
@@ -127,7 +129,7 @@ public class VersionReportsTests
 
         var rejected = await VersionReports.RunAsync(ReporterAction.AuthenticationFailed, context, installed.State, Key, 403);
         Assert.Equal(ReportEvents.ApiKeyCheck, rejected.Event);
-        Assert.Equal(ApiKeyCheckStatus.Invalid, rejected.Check!.Status);
+        Assert.Equal(KeyCheckStatus.Invalid, rejected.Check!.Status);
         Assert.Equal(403, rejected.Check.HttpStatus);
 
         var again = await VersionReports.RunAsync(ReporterAction.AuthenticationFailed, context, rejected.State, Key, 403);
@@ -141,7 +143,7 @@ public class VersionReportsTests
         var http = new FakeHttp();
         var result = await VersionReports.RunAsync(ReporterAction.OnRequest, Context(http, enabled: false), ReporterState.Empty, Key);
         Assert.Null(result.Event);
-        Assert.Equal(ApiKeyCheckStatus.Ok, result.Check!.Status);
+        Assert.Equal(KeyCheckStatus.Ok, result.Check!.Status);
         Assert.Empty(http.Reports);
     }
 
@@ -150,7 +152,7 @@ public class VersionReportsTests
     {
         var http = new FakeHttp { Fail = true };
         var result = await VersionReports.RunAsync(ReporterAction.OnRequest, Context(http, enabled: true), ReporterState.Empty, Key);
-        Assert.Equal(ApiKeyCheckStatus.Unreachable, result.Check!.Status);
+        Assert.Equal(KeyCheckStatus.Unreachable, result.Check!.Status);
         Assert.False(result.Sent);
         Assert.NotNull(result.State.LastFailureAt); // no new attempt for an hour
     }
@@ -161,7 +163,7 @@ public class VersionReportsTests
         var site = new Entity();
         Assert.Same(ReporterState.Empty, SupertextReporting.LoadState(site));
 
-        var state = new ReporterState("1.0.0|3.0.1|10.0.0", "ok", null, new ApiKeyCheck("ok", "2026-10-14T09:00:00Z", 200, null, ApiKeyCheck.FingerprintOf(Key)));
+        var state = new ReporterState("1.0.0|3.0.1|10.0.0", "ok", null, new KeyCheck("ok", "2026-10-14T09:00:00Z", 200, null, ApiKeyCheck.FingerprintOf(Key)));
         SupertextReporting.StoreState(site, state);
 
         Assert.Equal(state.ToJson(), SupertextReporting.LoadState(site).ToJson());
@@ -169,6 +171,23 @@ public class VersionReportsTests
 
         site.Alter<Settings.SupertextReportingState>(s => s.Reporter = "{broken");
         Assert.Same(ReporterState.Empty, SupertextReporting.LoadState(site));
+    }
+
+    [Fact]
+    public async Task State_stored_by_the_SDK_0_2_reporter_is_kept_no_new_installed_report()
+    {
+        // What the SDK 0.2 reporter stored in the site document before the switch to Plugin Health.
+        var stored = "{\"reportedVersions\":\"1.2.3|3.0.1|" + Environment.Version + "\",\"reportedKeyStatus\":\"ok\",\"lastFailureAt\":null,"
+            + "\"keyCheck\":{\"status\":\"ok\",\"checkedAt\":\"2026-10-14T09:00:00Z\",\"httpStatus\":200,\"errorCode\":null,\"fingerprint\":\"" + ApiKeyCheck.FingerprintOf(Key) + "\"}}";
+        var site = new Entity();
+        site.Alter<Settings.SupertextReportingState>(s => s.Reporter = stored);
+        var state = SupertextReporting.LoadState(site);
+        Assert.Equal(stored, state.ToJson());
+
+        var http = new FakeHttp();
+        var result = await VersionReports.RunAsync(ReporterAction.OnRequest, Context(http, enabled: true), state, Key);
+        Assert.Null(result.Event);
+        Assert.Empty(http.Requests);
     }
 
     private static ReportingContext Context(FakeHttp http, bool enabled)

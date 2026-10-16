@@ -35,8 +35,8 @@ public class SupertextSettingsViewModel
     /// <summary>What SUPERTEXT_VERSION_REPORTS forces (the checkbox is then read-only), or null.</summary>
     public bool? VersionReportsFromEnvironment { get; set; }
 
-    /// <summary>The latest automatic API key check (SDK result), or null if none has run yet.</summary>
-    public Sdk.V1.ApiKeyCheck KeyCheck { get; set; }
+    /// <summary>The latest automatic API key check (the SDK's check, as Plugin Health stores it), or null if none has run yet.</summary>
+    public PluginHealth.KeyCheck KeyCheck { get; set; }
 
     /// <summary>Supertext's target languages for the mapping selects.</summary>
     public IReadOnlyList<Sdk.V1.TargetLanguage> TargetLanguages { get; set; } = [];

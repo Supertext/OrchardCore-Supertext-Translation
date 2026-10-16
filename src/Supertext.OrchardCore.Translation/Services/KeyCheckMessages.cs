@@ -1,7 +1,7 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc.Localization;
 using OrchardCore.Modules;
-using Supertext.OrchardCore.Translation.Sdk.V1;
+using Supertext.OrchardCore.Translation.PluginHealth;
 
 namespace Supertext.OrchardCore.Translation.Services;
 
@@ -17,17 +17,17 @@ public sealed class KeyCheckMessages(IHtmlLocalizer<KeyCheckMessages> htmlLocali
 
     private readonly IHtmlLocalizer H = htmlLocalizer;
 
-    public LocalizedHtmlString Describe(ApiKeyCheck check) => check.Status switch
+    public LocalizedHtmlString Describe(KeyCheck check) => check.Status switch
     {
-        ApiKeyCheckStatus.Ok => H["API key checked: the connection to Supertext works."],
-        ApiKeyCheckStatus.Invalid => H["Supertext rejected the API key. Check that you copied the whole key, or generate a new one at <a href=\"{0}\" target=\"_blank\" rel=\"noopener\">supertext.com → Integrations → API</a> (requires the Admin role). No Supertext account yet? Create one at <a href=\"{1}\" target=\"_blank\" rel=\"noopener\">supertext.com</a>.", ApiKeyUrl, SignupUrl],
-        ApiKeyCheckStatus.Missing => H["No API key is set yet. No Supertext account yet? Create one at <a href=\"{1}\" target=\"_blank\" rel=\"noopener\">supertext.com</a>. Generate your API key at <a href=\"{0}\" target=\"_blank\" rel=\"noopener\">supertext.com → Integrations → API</a> (requires the Admin role).", ApiKeyUrl, SignupUrl],
-        ApiKeyCheckStatus.Unreachable => H["The API key couldn't be checked because Supertext can't be reached. The settings are saved; check again later."],
+        KeyCheckStatus.Ok => H["API key checked: the connection to Supertext works."],
+        KeyCheckStatus.Invalid => H["Supertext rejected the API key. Check that you copied the whole key, or generate a new one at <a href=\"{0}\" target=\"_blank\" rel=\"noopener\">supertext.com → Integrations → API</a> (requires the Admin role). No Supertext account yet? Create one at <a href=\"{1}\" target=\"_blank\" rel=\"noopener\">supertext.com</a>.", ApiKeyUrl, SignupUrl],
+        KeyCheckStatus.Missing => H["No API key is set yet. No Supertext account yet? Create one at <a href=\"{1}\" target=\"_blank\" rel=\"noopener\">supertext.com</a>. Generate your API key at <a href=\"{0}\" target=\"_blank\" rel=\"noopener\">supertext.com → Integrations → API</a> (requires the Admin role).", ApiKeyUrl, SignupUrl],
+        KeyCheckStatus.Unreachable => H["The API key couldn't be checked because Supertext can't be reached. The settings are saved; check again later."],
         _ => H["The API key couldn't be checked: Supertext answered with an error ({0}). The settings are saved; check again later.", check.HttpStatus?.ToString(CultureInfo.InvariantCulture) ?? check.ErrorCode ?? "?"],
     };
 
     /// <summary>"checked 14.10.2026 09:15" in the site's time zone and the admin's culture.</summary>
-    public async Task<LocalizedHtmlString> CheckedAtAsync(ApiKeyCheck check)
+    public async Task<LocalizedHtmlString> CheckedAtAsync(KeyCheck check)
     {
         var time = check.CheckedAt;
         if (DateTimeOffset.TryParse(check.CheckedAt, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))

@@ -6,7 +6,7 @@ using OrchardCore.BackgroundJobs;
 using OrchardCore.Entities;
 using OrchardCore.Settings;
 using Supertext.OrchardCore.Translation.Api;
-using Supertext.OrchardCore.Translation.Sdk.V1;
+using Supertext.OrchardCore.Translation.PluginHealth;
 using Supertext.OrchardCore.Translation.Settings;
 
 namespace Supertext.OrchardCore.Translation.Services;
@@ -20,7 +20,7 @@ namespace Supertext.OrchardCore.Translation.Services;
 /// the localization hook), after the response in its own scope (<see cref="HttpBackgroundJob"/>),</item>
 /// <item><see cref="AuthenticationFailedAsync"/> when Supertext rejects the key during a translation.</item>
 /// </list>
-/// Nothing here throws into a request: the SDK never throws, and storage errors are logged at debug level.
+/// Nothing here throws into a request: Plugin Health never throws, and storage errors are logged at debug level.
 /// </summary>
 public sealed class SupertextReporting(
     ISiteService siteService,
@@ -56,7 +56,7 @@ public sealed class SupertextReporting(
     }
 
     /// <summary>The latest stored key check, or null.</summary>
-    public async Task<ApiKeyCheck> LastCheckAsync()
+    public async Task<KeyCheck> LastCheckAsync()
     {
         try
         {

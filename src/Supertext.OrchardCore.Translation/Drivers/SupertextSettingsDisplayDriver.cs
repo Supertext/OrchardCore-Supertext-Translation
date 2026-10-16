@@ -10,7 +10,7 @@ using OrchardCore.Localization;
 using OrchardCore.Mvc.ModelBinding;
 using OrchardCore.Settings;
 using Supertext.OrchardCore.Translation.Api;
-using ApiKeyCheckStatus = Supertext.OrchardCore.Translation.Sdk.V1.ApiKeyCheckStatus;
+using KeyCheckStatus = Supertext.OrchardCore.Translation.PluginHealth.KeyCheckStatus;
 using Supertext.OrchardCore.Translation.Services;
 using Supertext.OrchardCore.Translation.Settings;
 using Supertext.OrchardCore.Translation.ViewModels;
@@ -131,8 +131,8 @@ public sealed class SupertextSettingsDisplayDriver(
                 var text = keyCheckMessages.Describe(check);
                 await (check.Status switch
                 {
-                    ApiKeyCheckStatus.Ok => notifier.SuccessAsync(text),
-                    ApiKeyCheckStatus.Invalid => notifier.ErrorAsync(text),
+                    KeyCheckStatus.Ok => notifier.SuccessAsync(text),
+                    KeyCheckStatus.Invalid => notifier.ErrorAsync(text),
                     _ => notifier.WarningAsync(text),
                 });
             }

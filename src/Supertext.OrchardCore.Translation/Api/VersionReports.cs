@@ -1,4 +1,4 @@
-using Supertext.OrchardCore.Translation.Sdk.V1;
+using Supertext.OrchardCore.Translation.PluginHealth;
 
 namespace Supertext.OrchardCore.Translation.Api;
 
@@ -35,8 +35,9 @@ public sealed record ReportingContext(bool Enabled, string SiteUrl, string Modul
 
 /// <summary>
 /// The module's side of the Supertext Commando Center: version reports, the automatic API key
-/// check and the callback ping. The protocol is the SDK's (<see cref="InstallationReporter"/>,
-/// <see cref="PingResponse"/>); this class only supplies what Orchard Core knows. No Orchard Core
+/// check and the callback ping. The protocol is Supertext Plugin Health's (<see cref="InstallationReporter"/>,
+/// <see cref="PingResponse"/>, bundled in <c>lib/supertext-plugin-health</c>), the key check the SDK's
+/// (<c>CheckApiKeyAsync</c>); this class only supplies what Orchard Core knows. No Orchard Core
 /// dependency (unit-tested); <c>Services/SupertextReporting</c> stores the state and runs it.
 /// </summary>
 public static class VersionReports
@@ -88,38 +89,43 @@ public static class VersionReports
     /// <summary>The absolute URL of the ping route for a site URL.</summary>
     public static string CallbackUrl(string siteUrl) => siteUrl.TrimEnd('/') + "/" + PingPath;
 
-    /// <summary>The ping route's answer: status, headers and body exactly as the SDK returns them (404 while reports are off).</summary>
+    /// <summary>The ping route's answer: status, headers and body exactly as Plugin Health returns them (404 while reports are off).</summary>
     public static PingResponse Ping(string challenge, bool enabled) => PingResponse.For(challenge, PluginName, enabled);
 
-    /// <summary>The SDK reporter for this installation.</summary>
+    /// <summary>The Plugin Health reporter for this installation, with the SDK's key check.</summary>
     public static InstallationReporter CreateReporter(ReportingContext context)
     {
-        var clientOptions = SupertextClient.KeyCheckOptions(context.Endpoint);
-        if (context.HttpClient is not null)
+        var keyCheckOptions = SupertextClient.KeyCheckOptions(context.Endpoint);
+        var clientOptions = new Sdk.V1.SupertextClientOptions
         {
-            clientOptions = new Sdk.V1.SupertextClientOptions
-            {
-                BaseUrl = clientOptions.BaseUrl,
-                UserAgent = clientOptions.UserAgent,
-                HttpClient = context.HttpClient,
-            };
-        }
+            BaseUrl = keyCheckOptions.BaseUrl,
+            UserAgent = keyCheckOptions.UserAgent,
+            HttpClient = context.HttpClient ?? keyCheckOptions.HttpClient,
+            TimeProvider = context.TimeProvider ?? keyCheckOptions.TimeProvider,
+        };
         return new InstallationReporter(new ReporterOptions
         {
             Enabled = context.Enabled,
             SiteUrl = context.SiteUrl,
             Plugin = new NameVersion(PluginName, string.IsNullOrEmpty(context.ModuleVersion) ? "0.0.0" : context.ModuleVersion),
             System = new NameVersion(SystemName, string.IsNullOrEmpty(context.OrchardVersion) ? null : context.OrchardVersion),
+            SdkVersion = Sdk.SdkInfo.Version,
             CallbackUrl = CallbackUrl(context.SiteUrl),
             ReportUrl = context.ReportUrl,
-            ClientOptions = clientOptions,
+            KeyChecker = KeyChecker.FromDelegates(
+                async (key, ct) =>
+                {
+                    var c = await new Sdk.V1.SupertextClient(key, clientOptions).CheckApiKeyAsync(ct);
+                    return new KeyCheck(c.Status, c.CheckedAt, c.HttpStatus, c.ErrorCode, c.Fingerprint);
+                },
+                Sdk.V1.ApiKeyCheck.FingerprintOf),
             HttpClient = context.HttpClient,
             TimeProvider = context.TimeProvider,
         });
     }
 
     /// <summary>Runs one reporter action on the stored state. Never throws: on any error the state is returned unchanged with no event.</summary>
-    /// <param name="apiKey">The key in effect (it never leaves the SDK; only its fingerprint is kept).</param>
+    /// <param name="apiKey">The key in effect (it never leaves the module; only its fingerprint is kept).</param>
     /// <param name="httpStatus">For <see cref="ReporterAction.AuthenticationFailed"/>: 401 or 403.</param>
     public static async Task<ReporterResult> RunAsync(ReporterAction action, ReportingContext context, ReporterState state, string apiKey, int httpStatus = 401)
     {

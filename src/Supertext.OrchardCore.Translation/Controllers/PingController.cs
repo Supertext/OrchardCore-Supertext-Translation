@@ -7,7 +7,7 @@ namespace Supertext.OrchardCore.Translation.Controllers;
 
 /// <summary>
 /// <c>GET /supertext/ping?challenge=…</c>: public (no login, no session, no antiforgery token), so the
-/// Supertext Commando Center can check that the site is reachable. Answers only with the SDK's
+/// Supertext Commando Center can check that the site is reachable. Answers only with Supertext Plugin Health's
 /// <c>PingResponse</c> (the challenge echoed, nothing else) and only while version reports are on (404 otherwise).
 /// </summary>
 [AllowAnonymous]

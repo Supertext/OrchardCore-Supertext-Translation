@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>disable</Nullable>
-    <!-- The bundled SDK uses nullable annotations; this module doesn't enable nullable checks. -->
+    <!-- The bundled SDK and Plugin Health use nullable annotations; this module doesn't enable nullable checks. -->
     <NoWarn>$(NoWarn);CS8632</NoWarn>
     <ImplicitUsings>enable</ImplicitUsings>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
@@ -39,6 +39,8 @@
   <ItemGroup>
     <!-- The Supertext SDK, bundled (namespace Supertext.OrchardCore.Translation.Sdk and .Sdk.V1): see lib/supertext-sdk/README.md -->
     <Compile Include="../../lib/supertext-sdk/src/**/*.cs" Link="Sdk/%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- Supertext Plugin Health, bundled (namespace Supertext.OrchardCore.Translation.PluginHealth): see lib/supertext-plugin-health/README.md -->
+    <Compile Include="../../lib/supertext-plugin-health/src/**/*.cs" Link="PluginHealth/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

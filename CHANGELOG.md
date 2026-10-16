@@ -18,9 +18,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
-- All Supertext API calls now go through the official Supertext .NET SDK (0.2.1, commit `eeba8fa`, `V1` namespace), compiled into the module (nothing extra to install). The HtmlAgilityPack dependency is gone.
+- All Supertext API calls now go through the official Supertext .NET SDK (0.3.0, commit `f7bd414`, `V1` namespace), compiled into the module (nothing extra to install). The HtmlAgilityPack dependency is gone.
 - **Languages are no longer guessed.** A culture that is a Supertext code (`de-CH`, `fr-CH`, `es`, `zh-Hans`, apart from case and `_`/`-`) is used as it is; every other culture (`de`, `en`, `zh-CN`, `es-ES` …) needs a Supertext language in the **Language mapping** (formerly *Language codes*; existing `culture=code` entries are kept). Supertext only accepts its own codes: regional for German, English, French, Italian and Portuguese, bare for most others (`es`, `nl`, `sl`). An unmapped culture is not sent to Supertext.
 - The form of address is only sent for languages Supertext offers it for; English, Swiss German, Romansh, Albanian and Serbian are translated in the default tone.
+- Version reports, the API key check result and the reachability ping now use Supertext Plugin Health 0.1.0 (bundled in `lib/supertext-plugin-health`); Supertext SDK updated to 0.3.0. No change for sites: settings and stored state stay as they are.
 
 ## 0.1.0 — 2026-10-07
 

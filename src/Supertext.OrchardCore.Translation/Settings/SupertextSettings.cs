@@ -32,7 +32,7 @@ public sealed class SupertextSettings
 
 /// <summary>
 /// The Commando Center reporter's state (what was reported last, the latest API key check), stored
-/// in the site document next to <see cref="SupertextSettings"/>: the SDK's <c>ReporterState</c> as JSON.
+/// in the site document next to <see cref="SupertextSettings"/>: Supertext Plugin Health's <c>ReporterState</c> as JSON (same format as the SDK 0.2 reporter stored).
 /// Never contains the API key (only a SHA-256 fingerprint to notice a changed key).
 /// </summary>
 public sealed class SupertextReportingState
