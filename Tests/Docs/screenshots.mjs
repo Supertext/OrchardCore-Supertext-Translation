@@ -129,7 +129,8 @@ const rowBox = await aboutRow.boundingBox();
 const menuBox = await aboutRow.locator('.dropdown-menu.show').boundingBox();
 await page.screenshot({ path: out + 'localizations-menu.png', clip: { x: rowBox.x, y: rowBox.y - 8, width: rowBox.width, height: menuBox.y + menuBox.height - rowBox.y + 16 } });
 console.log('wrote localizations-menu.png');
-await aboutRow.locator('.dropdown-menu.show a[title="Create German (Switzerland)"]').click();
+// The menu opens over the admin's left sidebar, which would take a real click: click the link in the page.
+await aboutRow.locator('.dropdown-menu.show a[title="Create German (Switzerland)"]').evaluate((a) => a.click());
 await page.waitForLoadState('networkidle');
 await page.setViewportSize({ width: 1280, height: 900 });
 await shot(page, 'localize-translated.png', '.ta-content', { maxHeight: 620 });
