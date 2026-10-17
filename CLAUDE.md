@@ -95,3 +95,4 @@ Lessons from testing against the live API (October 2026), to apply in every plug
 - Orchard user names can't contain `@`: the demo uses the e-mail's local part as user name (entrypoint and `DemoSetupEvents.UserNameFor`); people sign in with the e-mail.
 - If a Razor view fails to compile with nonsense positions after edits, `dotnet build-server shutdown` and delete `obj/`.
 - Test against the local stand-in (`Tests/Docs/stand-in.mjs`, `STAND_IN_PREFIX=1` marks untranslated text) before the live API.
+- End-to-end tests against the real Supertext API: `.github/workflows/e2e.yml` with `Tests/E2E/` (see "End-to-end tests" in `docs/DEVELOPER.md`). The key is only the GitHub secret `SUPERTEXT_API_KEY`, set by Remy; sessions don't use a live key. Behaviour changes need matching checks in `Tests/E2E/live.mjs`.
