@@ -123,7 +123,7 @@ await shot(page, 'overwrite-warning.png', '.ta-content', { maxHeight: 520 });
 await page.goto(`${base}/Admin/Contents/ContentItems`);
 const aboutRow = page.locator('li.list-group-item', { hasText: 'About this demo' });
 await aboutRow.locator('button.localizations').click();
-await page.waitForTimeout(300);
+await page.waitForTimeout(1000); // let the menu and the button focus ring settle
 await freezeTimes(page);
 const rowBox = await aboutRow.boundingBox();
 const menuBox = await aboutRow.locator('.dropdown-menu.show').boundingBox();
