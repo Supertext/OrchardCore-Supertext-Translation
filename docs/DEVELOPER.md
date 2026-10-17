@@ -181,7 +181,7 @@ cd Tests/Docs && npm install && npx playwright install chromium && node stand-in
 BASE_URL=http://127.0.0.1:8096 DEMO_ADMIN_EMAIL=… DEMO_ADMIN_PASSWORD=… DEMO_EDITOR_EMAIL=… DEMO_EDITOR_PASSWORD=… npm run screenshots
 ```
 
-The script shows fixed values for server-rendered times ("1 minute ago" in the content list, the key check's date), so the images only change when the UI does. In CI, the E2E workflow takes the screenshots on every run and opens a pull request when they differ (see *End-to-end tests*).
+The script shows fixed values for server-rendered times ("1 minute ago" in the content list, the key check's date), shows every toast of the page and turns off transitions and the text caret, so the images only change when the UI does (two runs give identical files). In CI, the E2E workflow takes the screenshots on every run and opens a pull request when they differ (see *End-to-end tests*).
 
 New texts in the flow: run the stand-in with `STAND_IN_DUMP=<dir>` and translate what it writes to `<dir>/de-CH.json` into `sample-de.json`. `CHROMIUM_PATH` points Playwright at an installed Chromium.
 
