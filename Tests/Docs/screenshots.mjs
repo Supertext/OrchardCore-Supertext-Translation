@@ -37,9 +37,17 @@ async function session(email, password) {
   return page;
 }
 
-// Server-rendered times ("49 seconds ago", the key check's date) would change every image on
-// every run: show fixed values, so the images only change when the UI does.
+// Server-rendered times ("49 seconds ago", the key check's date) and timing (toasts that hide
+// after a few seconds, transitions, the blinking caret) would change the images on every run:
+// show fixed values and every toast of the page, so the images only change when the UI does.
 const freezeTimes = (page) => page.evaluate(() => {
+  if (!document.getElementById('screenshot-freeze')) {
+    const style = document.createElement('style');
+    style.id = 'screenshot-freeze';
+    style.textContent = '*, *::before, *::after { transition: none !important; animation: none !important; caret-color: transparent !important; }';
+    document.head.append(style);
+  }
+  document.querySelectorAll('.toast').forEach((t) => { t.classList.remove('hide', 'showing'); t.classList.add('show'); });
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     node.nodeValue = node.nodeValue.replace(/\b(\d+|a few|an?) (second|minute|hour)s? ago\b/g, '1 minute ago');
