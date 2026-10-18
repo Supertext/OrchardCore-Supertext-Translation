@@ -36,6 +36,8 @@ If a language already has a translation, Supertext asks first:
 
 Translating again **replaces the texts** of that translation with a new translation of the source, including any corrections you made by hand. The URL and language stay. The result is a new draft, so the published version stays online until you publish.
 
+**Translation review:** if your administrator turned on *Translation review* for a language, reviewers (your colleagues or Supertext linguists) check and correct the translations on the website. Their corrections come into Orchard Core the next time you translate the item into that language: after a review, translate it again. Texts reviewed once keep their corrected wording in later translations.
+
 ## Export for translation and import a translated file
 
 Instead of translating with Supertext's AI right away, you can download the texts of an item as a file, have it translated elsewhere (by a translator, in a translation tool such as Trados, memoQ or Phrase, or in Supertext's web app) and import the translated file again. Both are at the bottom of the **Translate with Supertext** page.

@@ -38,6 +38,9 @@ public class SupertextSettingsViewModel
     /// <summary>The latest automatic API key check (the SDK's check, as Plugin Health stores it), or null if none has run yet.</summary>
     public PluginHealth.KeyCheck KeyCheck { get; set; }
 
+    /// <summary>A review service is configured (SUPERTEXT_REVIEW_URL not set to empty): the Translation review column is shown.</summary>
+    public bool ReviewAvailable { get; set; }
+
     /// <summary>Supertext's target languages for the mapping selects (localized names, sorted).</summary>
     public IReadOnlyList<TargetOption> TargetLanguages { get; set; } = [];
 
@@ -54,6 +57,9 @@ public class LanguageMappingRow
 
     /// <summary>Supertext code; empty = not mapped.</summary>
     public string Code { get; set; }
+
+    /// <summary>Translation review: translations into this culture go through Supertext's review service.</summary>
+    public bool Review { get; set; }
 
     // Display only
     public string CultureName { get; set; }

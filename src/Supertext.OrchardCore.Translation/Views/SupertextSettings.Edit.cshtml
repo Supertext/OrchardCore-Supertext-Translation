@@ -91,6 +91,10 @@
             <tr>
                 <th>@T["Culture"]</th>
                 <th>@T["Supertext language"]</th>
+                @if (Model.ReviewAvailable)
+                {
+                    <th>@T["Translation review"]</th>
+                }
             </tr>
         </thead>
         <tbody>
@@ -136,10 +140,22 @@
                             <span class="d-block small text-warning-emphasis">@T["Supertext offers no formal/informal choice for this language: it is translated in the default tone."]</span>
                         }
                     </td>
+                    @if (Model.ReviewAvailable)
+                    {
+                        <td>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" asp-for="Mappings[i].Review" aria-label="@T["Translation review"]: @row.CultureName" />
+                            </div>
+                        </td>
+                    }
                 </tr>
             }
         </tbody>
     </table>
+    @if (Model.ReviewAvailable)
+    {
+        <span class="hint d-block mt-2 supertext-review-hint">@T["Translation review: translations into the cultures ticked go through Supertext's review service, so reviewers can check and correct them on the website with the Supertext Localization Review extension. Their corrections are used the next time the content item is translated."]</span>
+    }
 </div>
 
 <div class="mb-3">

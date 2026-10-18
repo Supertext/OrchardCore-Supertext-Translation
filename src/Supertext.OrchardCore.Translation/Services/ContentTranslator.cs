@@ -59,7 +59,9 @@ public sealed class ContentTranslator(
 
         var politeness = LanguageMapping.PolitenessFor(targetCode, settings.Politeness);
 
-        var translations = await client.TranslateSegmentsAsync(connection, segments.Select(s => s.Segment).ToList(), targetCode, sourceCode, politeness, ct);
+        // Cultures with Translation review on go through Supertext's review service (same key and protocol).
+        var targetConnection = connection.ForReview(SupertextConfiguration.ReviewFor(settings, targetCulture));
+        var translations = await client.TranslateSegmentsAsync(targetConnection, segments.Select(s => s.Segment).ToList(), targetCode, sourceCode, politeness, ct);
         for (var i = 0; i < segments.Count; i++)
         {
             if (translations.TryGetValue(i, out var text) && !string.IsNullOrWhiteSpace(text))

@@ -66,7 +66,8 @@ public sealed class SupertextSettingsDisplayDriver(
                 : string.IsNullOrWhiteSpace(settings.Endpoint) ? SupertextClient.DefaultEndpoint : settings.Endpoint;
             model.Politeness = settings.Politeness ?? "default";
             model.TranslateNewLocalizations = settings.TranslateNewLocalizations;
-            model.Mappings = cultures.Select(culture => MappingRow(culture, mapping, settings.Politeness)).ToList();
+            model.Mappings = cultures.Select(culture => MappingRow(culture, mapping, settings)).ToList();
+            model.ReviewAvailable = configuration.ReviewUrlInEffect != string.Empty;
             model.TargetLanguages = TargetOptions();
             model.ExcludedFields = settings.ExcludedFields;
             model.PollTimeoutSeconds = settings.PollTimeoutSeconds;
@@ -130,6 +131,11 @@ public sealed class SupertextSettingsDisplayDriver(
             settings.Politeness = model.Politeness is "more" or "less" ? model.Politeness : "default";
             settings.TranslateNewLocalizations = model.TranslateNewLocalizations;
             settings.LanguageMapping = MergeMapping(storedMapping, model.Mappings);
+            // The Translation review checkboxes are only shown (and posted) while a review service is configured.
+            if (configuration.ReviewUrlInEffect != string.Empty)
+            {
+                settings.ReviewCultures = MergeReview(settings.ReviewCultures, model.Mappings);
+            }
             settings.ExcludedFields = model.ExcludedFields?.Trim();
             settings.PollTimeoutSeconds = model.PollTimeoutSeconds;
             // A disabled checkbox (SUPERTEXT_VERSION_REPORTS set) isn't posted: keep the stored value.
@@ -171,8 +177,9 @@ public sealed class SupertextSettingsDisplayDriver(
             .ToList();
 
     /// <summary>A row of the Language mapping table: the stored code, else the SDK's suggestion (exact match, else default: de → de-DE), else none.</summary>
-    private static LanguageMappingRow MappingRow(string culture, IReadOnlyDictionary<string, string> mapping, string politeness)
+    private static LanguageMappingRow MappingRow(string culture, IReadOnlyDictionary<string, string> mapping, SupertextSettings settings)
     {
+        var politeness = settings.Politeness;
         var stored = mapping.TryGetValue(culture, out var mapped);
         var code = stored ? mapped : LanguageMapping.SuggestTarget(culture) ?? string.Empty;
         return new LanguageMappingRow
@@ -181,9 +188,22 @@ public sealed class SupertextSettingsDisplayDriver(
             CultureName = CultureNames.Get(culture),
             Code = code,
             Suggested = !stored && code != string.Empty,
+            Review = SupertextConfiguration.ReviewFor(settings, culture),
             UnknownCode = code != string.Empty && LanguageMapping.MatchTarget(code) is null,
             PolitenessUnavailable = code != string.Empty && politeness is "more" or "less" && LanguageMapping.SupportsPoliteness(code) == false,
         };
+    }
+
+    /// <summary>The cultures with Translation review on after saving: the posted rows decide for their cultures; cultures the site no longer has keep their value.</summary>
+    public static List<string> MergeReview(IEnumerable<string> stored, IEnumerable<LanguageMappingRow> rows)
+    {
+        var posted = (rows ?? []).Where(r => !string.IsNullOrWhiteSpace(r?.Culture)).ToList();
+        var result = (stored ?? [])
+            .Where(c => !string.IsNullOrWhiteSpace(c) && !posted.Any(r => string.Equals(r.Culture.Trim(), c.Trim(), StringComparison.OrdinalIgnoreCase)))
+            .Select(c => c.Trim())
+            .ToList();
+        result.AddRange(posted.Where(r => r.Review).Select(r => r.Culture.Trim()));
+        return result.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     /// <summary>

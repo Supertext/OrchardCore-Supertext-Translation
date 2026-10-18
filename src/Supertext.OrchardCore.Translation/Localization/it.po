@@ -655,3 +655,13 @@ msgstr "Suggerito da Supertext."
 msgctxt "Supertext.OrchardCore.Translation.Drivers.SupertextSettingsDisplayDriver"
 msgid "Supertext doesn't offer the code {0}. Choose a language from the list."
 msgstr "Supertext non offre il codice {0}. Scelga una lingua dall'elenco."
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Translation review"
+msgstr "Revisione delle traduzioni"
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Translation review: translations into the cultures ticked go through Supertext's review service, so reviewers can check and correct them on the website with the Supertext Localization Review extension. Their corrections are used the next time the content item is translated."
+msgstr "Revisione delle traduzioni: le traduzioni nelle lingue selezionate passano dal servizio di revisione di Supertext, così i revisori possono controllarle e correggerle direttamente sul sito con l’estensione Supertext Localization Review. Le loro correzioni vengono riprese alla prossima traduzione dell’elemento."

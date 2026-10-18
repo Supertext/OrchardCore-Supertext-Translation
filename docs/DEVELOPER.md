@@ -35,7 +35,7 @@ GET /supertext/ping (public)  → PingController → VersionReports.Ping (Plugin
 | Part | Role |
 | --- | --- |
 | `Manifest.cs`, `Startup.cs` | Module *Supertext Translation* (feature id `Supertext.OrchardCore.Translation`), depends on `OrchardCore.ContentLocalization` and `OrchardCore.Settings`. Registers the typed `HttpClient`, services, drivers, menu, permissions. |
-| `Api/SupertextClient` | Wrapper around the bundled Supertext SDK (`lib/supertext-sdk`, see *Supertext SDK*): the protocol below, 429 retries, prefix-tolerant key, segments packed into documents below the size limit; SDK error codes become `SupertextException` templates. Stateless: each call takes a `SupertextConnection`. |
+| `Api/SupertextClient` | Wrapper around the bundled Supertext SDK (`lib/supertext-sdk`, see *Supertext SDK*): the protocol below, 429 retries, prefix-tolerant key, segments packed into documents below the size limit; SDK error codes become `SupertextException` templates. Stateless: each call takes a `SupertextConnection` (`ForReview` gives the one for the review service, see *Translation review*). User-Agent `OrchardCore-Supertext-Translation/<version>` (`ModuleVersion.Current`, as in the reports). |
 | `Sdk/…` (`lib/supertext-sdk/src`) | Bundled copy of the Supertext .NET SDK, namespace `Supertext.OrchardCore.Translation.Sdk` (`SdkInfo`), `.Sdk.V1` (everything that talks to the API v1) and `.Sdk.Files` (translation files, `TranslationFiles`), compiled into the module. Never edit. |
 | `PluginHealth/…` (`lib/supertext-plugin-health/src`) | Bundled copy of Supertext Plugin Health for .NET (see *Supertext Plugin Health*), namespace `Supertext.OrchardCore.Translation.PluginHealth`, compiled into the module. Never edit. |
 | `Api/LanguageMapping` | Cultures → Supertext codes with the SDK's `Languages` (see *Language codes*); parses and writes the *Language mapping* setting; decides whether the form of address is sent. No Orchard dependency, unit-tested. |
@@ -81,6 +81,8 @@ AI file translation API v1, shared with all Supertext plugins. Every call goes t
 4. `DELETE translate/ai/file/{id}` (files also expire after 24 h)
 
 Header `Authorization: Supertext-Auth-Key <key>` (a pasted prefix is stripped, exactly one is sent). HTTP 429 is retried up to 4 times (`Retry-After`, else 1/2/4/8 s with jitter). Cultures are translated one after the other to stay under the per-second limit. The API key check is `GET features` (free), run by the SDK's `CheckApiKeyAsync` and reported by Supertext Plugin Health (see *Commando Center*).
+
+**Translation review** (per culture: `SupertextSettings.ReviewCultures`, the checkbox column of the language mapping): `ContentTranslator` asks `SupertextConfiguration.ReviewFor(settings, targetCulture)` and translates with `connection.ForReview(review)`, a `SupertextConnection` with the same key, timeouts and `HttpClient` whose endpoint is the review URL (`SupertextConfiguration.ReviewUrlInEffect`: `SUPERTEXT_REVIEW_URL`, else `Supertext:ReviewUrl`, else `SupertextClient.ReviewUrl`, the translation proxy of [Supertext Localization Review](https://github.com/Supertext/Localization-Review-Supertext-Translation)). The SDK client is created per call, so the job is uploaded, polled, downloaded and deleted by the client that submitted it. The proxy speaks the same API v1, forwards to the live Supertext API with the site's key, stores every segment per key and serves reviewers' corrections on the next upload, so nothing else changes in the module. An empty review URL (set but empty) or the same URL as the endpoint means `ForReview` always returns the direct connection; with an empty URL the settings page hides the column and saving keeps the stored list. The key check (`KeyCheckOptions`), the reports and file export/import never use the review service. Older sites have no `ReviewCultures`: review off, no migration needed.
 
 ## Supertext SDK
 
@@ -163,6 +165,7 @@ dotnet test tests/Supertext.OrchardCore.Translation.Tests   # SDK wrapper agains
 
 - `LanguageMappingTests`: mapping, exact codes, SDK defaults (`fr` → `fr-FR`, `es-ES` → `es`, `zh-TW` → `zh-Hant`), `unsupported_language` for `en-IE`/`de-LI`/`gsw` without mapping, suggestions for the selects, migration of stored codes, source forms, form of address only where Supertext offers it.
 - `TranslationFileExchangeTests`: reference round trip, export with the collector's keys and the mapping (unmapped cultures fall back to the culture), import of `ok` texts, `source_changed` only with the option, `untranslated`/`invalid_markup`/`missing` not written, other plugin and unknown reference refused, too large uploads refused before reading.
+- `SupertextClientTests`: the SDK wrapper against a fake API (segments in one document, Liquid kept, key prefix, error templates); Translation review: a review culture's upload, status, download and delete all go to the review URL with the same key and a User-Agent with the module's version, other cultures go directly, an empty review URL or the API's own URL turns it off, the default is Supertext's review service, `SUPERTEXT_REVIEW_URL=` (empty) wins over the configuration, the per-culture setting and how saving merges it.
 - `VersionReportsTests` (fake HTTP, never the live API or center): the setting and `SUPERTEXT_VERSION_REPORTS`, site URL, ping answers (200/400/404), one `installed` report with the right fields and without the key, nothing on an unchanged request, `upgraded`, `settings_saved`, a 401/403 reported once, nothing sent with reports off, no exception when the network fails, state stored in a site entity.
 
 CI (`.github/workflows/ci.yml`) builds the module and the demo, runs the tests, checks the demo entrypoint and the Node scripts' syntax.
@@ -209,7 +212,7 @@ The public demo is a container built from `demo/Dockerfile`: Orchard Core 3.0.1 
 
 Orchard Core's setup screen never appears: AutoSetup installs the site.
 
-**Service variables:** `DEMO_*` (above), `SUPERTEXT_API_KEY`, optional `SUPERTEXT_API_ENDPOINT` and `SUPERTEXT_VERSION_REPORTS` (`0` turns the version reports off), `PORT=8080` (the domain's target port), `RAILWAY_DOCKERFILE_PATH=demo/Dockerfile`. On Railway the `DEMO_*` variables reference the umbraco service's (`${{umbraco.DEMO_ADMIN_EMAIL}}` …), so all .NET demos share one set.
+**Service variables:** `DEMO_*` (above), `SUPERTEXT_API_KEY`, optional `SUPERTEXT_API_ENDPOINT` (to try the review service, tick *Translation review* in the language mapping instead), `SUPERTEXT_REVIEW_URL` (another review service than Supertext's; empty turns review off) and `SUPERTEXT_VERSION_REPORTS` (`0` turns the version reports off), `PORT=8080` (the domain's target port), `RAILWAY_DOCKERFILE_PATH=demo/Dockerfile`. On Railway the `DEMO_*` variables reference the umbraco service's (`${{umbraco.DEMO_ADMIN_EMAIL}}` …), so all .NET demos share one set.
 
 **Run it locally:**
 
@@ -247,7 +250,7 @@ Publishing to NuGet stays manual: `dotnet pack src/Supertext.OrchardCore.Transla
 
 - Translation runs inside the request (up to the timeout per culture). Planned: a background task with progress for very long items and many cultures.
 - Unsaved changes in the editor are not translated (the button's tooltip says so).
-- No sync of later source changes; translate again to refresh a culture.
+- No sync of later source changes; translate again to refresh a culture. Translating again overwrites manual changes; a translation memory and reviewers' corrections come from the review service when a culture has *Translation review* on, and reach Orchard Core only with the next translation (no push).
 - Markdown is sent as plain text: syntax usually survives, but isn't protected.
 - Shortcodes (`[image]…`) in HTML are sent as text; only Liquid is protected (and only in API translations, not in exported files).
 - *Export for translation* works on one item at a time (no bulk export from the content list yet).
