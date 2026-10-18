@@ -146,10 +146,10 @@ public sealed class SupertextSettingsDisplayDriver(
         => Uri.TryCreate(endpoint, UriKind.Absolute, out var uri)
             && (uri.Scheme == Uri.UriSchemeHttps || (uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback));
 
-    /// <summary>A row of the Language mapping table: the stored code, else the Supertext code equal to the culture.</summary>
+    /// <summary>A row of the Language mapping table: the stored code, else the suggested Supertext code (the exact match, else the SDK's default target).</summary>
     private static LanguageMappingRow MappingRow(string culture, IReadOnlyDictionary<string, string> mapping, string politeness)
     {
-        var code = mapping.TryGetValue(culture, out var mapped) ? mapped : LanguageMapping.MatchTarget(culture) ?? string.Empty;
+        var code = mapping.TryGetValue(culture, out var mapped) ? mapped : LanguageMapping.SuggestTarget(culture) ?? string.Empty;
         return new LanguageMappingRow
         {
             Culture = culture,

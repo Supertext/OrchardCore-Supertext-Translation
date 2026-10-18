@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Supertext.OrchardCore.Translation.Tests;
 
-/// <summary>Cultures → Supertext codes: the mapping, else an exact Supertext code, else unsupported_language. No default regions.</summary>
+/// <summary>Cultures → Supertext codes: the mapping, else an exact Supertext code, else the SDK's default target, else unsupported_language.</summary>
 public class LanguageMappingTests
 {
     private static readonly IReadOnlyDictionary<string, string> Mapping = LanguageMapping.Parse("de = de-CH\nen=en-US\n\nbroken line\nzh-CN=zh-Hans\nDE=de-AT\n");
@@ -25,15 +25,18 @@ public class LanguageMappingTests
     [InlineData("fr_ch", "fr-CH")]
     [InlineData("es", "es")]           // bare for languages without regions
     [InlineData("sl", "sl")]
-    public void Target_is_the_mapping_or_an_exact_code(string culture, string expected)
+    [InlineData("fr", "fr-FR")]        // default target (SDK 0.4.0)
+    [InlineData("it", "it-IT")]
+    [InlineData("es-ES", "es")]        // a region of a bare target
+    [InlineData("sl-SI", "sl")]
+    [InlineData("zh-CN", "zh-Hans")]
+    public void Target_is_the_mapping_an_exact_code_or_the_default(string culture, string expected)
         => Assert.Equal(expected, LanguageMapping.Target(culture, Mapping));
 
     [Theory]
-    [InlineData("fr")]      // no default region any more
-    [InlineData("it")]
-    [InlineData("es-ES")]   // not a Supertext code
-    [InlineData("sl-SI")]
-    [InlineData("zh-CN")]
+    [InlineData("en-IE")]   // no obvious default: needs a mapping
+    [InlineData("de-LI")]
+    [InlineData("gsw")]
     [InlineData("xx")]
     public void Unmapped_culture_is_an_unsupported_language(string culture)
     {

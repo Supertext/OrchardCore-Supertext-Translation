@@ -500,3 +500,148 @@ msgstr "Der API-Schlüssel konnte nicht geprüft werden: Supertext hat mit einem
 msgctxt "Supertext.OrchardCore.Translation.Services.KeyCheckMessages"
 msgid "checked {0}"
 msgstr "geprüft {0}"
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "An HTML file holds one language: choose exactly one."
+msgstr "Eine HTML-Datei enthält eine Sprache: Wählen Sie genau eine."
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "Nothing to translate."
+msgstr "Nichts zu übersetzen."
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "Choose a file to import."
+msgstr "Wählen Sie eine Datei zum Importieren."
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "You may not translate this content item with Supertext."
+msgstr "Sie dürfen dieses Element nicht mit Supertext übersetzen."
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "This language already has a translation. Tick “Yes, overwrite the existing translations” and import the file again."
+msgstr "Diese Sprache hat bereits eine Übersetzung. Kreuzen Sie «Ja, bestehende Übersetzungen überschreiben» an und importieren Sie die Datei erneut."
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "This file wasn't exported by the Supertext module, or its header was removed."
+msgstr "Diese Datei wurde nicht vom Supertext-Modul exportiert, oder ihr Kopfbereich wurde entfernt."
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "The file is too large (at most 10 MB)."
+msgstr "Die Datei ist zu groß (höchstens 10 MB)."
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "This file isn't a valid XLIFF or HTML translation file."
+msgstr "Diese Datei ist keine gültige XLIFF- oder HTML-Übersetzungsdatei."
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "This file belongs to another system ({0})."
+msgstr "Diese Datei gehört zu einem anderen System ({0})."
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "The site has no language {0}."
+msgstr "Die Website hat keine Sprache {0}."
+
+#: Controllers/AdminController.cs
+msgctxt "Supertext.OrchardCore.Translation.Controllers.AdminController"
+msgid "The content item this file was exported from no longer exists."
+msgstr "Das Element, aus dem diese Datei exportiert wurde, existiert nicht mehr."
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Export for translation"
+msgstr "Für Übersetzung exportieren"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Download the texts of this item as a file for a translator or a translation tool, or upload it to Supertext's web app. Import the translated file below."
+msgstr "Laden Sie die Texte dieses Elements als Datei für eine Übersetzerin, einen Übersetzer oder ein Übersetzungstool herunter, oder laden Sie sie in die Web-App von Supertext hoch. Importieren Sie die übersetzte Datei unten."
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "File format"
+msgstr "Dateiformat"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "XLIFF 1.2 (for translation tools)"
+msgstr "XLIFF 1.2 (für Übersetzungstools)"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "HTML (one language per file)"
+msgstr "HTML (eine Sprache pro Datei)"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Target languages"
+msgstr "Zielsprachen"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Download file"
+msgstr "Datei herunterladen"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Import translation"
+msgstr "Übersetzung importieren"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Imported texts are saved as drafts of the localizations, like translations with Supertext. Review and publish them when they're ready."
+msgstr "Importierte Texte werden wie Übersetzungen mit Supertext als Entwürfe der Lokalisierungen gespeichert. Prüfen und veröffentlichen Sie sie, wenn sie bereit sind."
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Translated file (XLIFF or HTML)"
+msgstr "Übersetzte Datei (XLIFF oder HTML)"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Also import texts whose source changed since the export"
+msgstr "Auch Texte importieren, deren Ausgangstext sich seit dem Export geändert hat"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Imported: {0}"
+msgstr "Importiert: {0}"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Skipped, source changed since the export: {0}"
+msgstr "Übersprungen, Ausgangstext seit dem Export geändert: {0}"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Not translated in the file: {0}"
+msgstr "In der Datei nicht übersetzt: {0}"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Formatting changed, not imported: {0}"
+msgstr "Formatierung verändert, nicht importiert: {0}"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Not in the file: {0}"
+msgstr "Nicht in der Datei: {0}"
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Saved as a draft. Open it to review."
+msgstr "Als Entwurf gespeichert. Öffnen Sie ihn zur Prüfung."
+
+#: Views/Admin/Translate.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
+msgid "Nothing was imported."
+msgstr "Es wurde nichts importiert."

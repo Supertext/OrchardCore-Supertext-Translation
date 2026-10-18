@@ -2,11 +2,11 @@ namespace Supertext.OrchardCore.Translation.Api;
 
 /// <summary>
 /// Orchard Core cultures → Supertext language codes, by the Supertext SDK's rules (<c>Languages</c>,
-/// the same in every Supertext plugin) and without guessing: the <b>Language mapping</b> setting
-/// (<c>culture=code</c> per line) wins; else a culture that equals a Supertext code apart from case
-/// and <c>_</c>/<c>-</c> (<c>de-CH</c>, <c>es</c>) is used as it is; anything else is the error
-/// <c>unsupported_language</c> and nothing is sent. There are no default regions: a culture <c>de</c>
-/// must be mapped (to <c>de-DE</c>, <c>de-CH</c> or <c>de-AT</c>). One mapping serves both directions:
+/// the same in every Supertext plugin): the <b>Language mapping</b> setting (<c>culture=code</c> per
+/// line) wins; else a culture that equals a Supertext code apart from case and <c>_</c>/<c>-</c>
+/// (<c>de-CH</c>, <c>es</c>) is used as it is; else the SDK's default target where one is obvious
+/// (<c>de</c> → <c>de-DE</c>, <c>es-ES</c> → <c>es</c>, <c>zh-CN</c> → <c>zh-Hans</c>); anything else
+/// (<c>en-IE</c>, <c>de-LI</c>, <c>gsw</c>) is the error <c>unsupported_language</c> and nothing is sent. One mapping serves both directions:
 /// as the source, a mapped code is sent in its source form (<c>de-CH</c> → <c>de</c>).
 /// No Orchard Core dependency (unit-tested).
 /// </summary>
@@ -58,6 +58,9 @@ public static class LanguageMapping
             return null;
         }
     }
+
+    /// <summary>What the settings page preselects for a culture: the exact match, else the SDK's default target ("de" → "de-DE"; "en-IE" → null).</summary>
+    public static string SuggestTarget(string culture) => Sdk.V1.Languages.SuggestTarget(culture);
 
     /// <summary>The Supertext target that equals the culture apart from case and <c>_</c>/<c>-</c> ("de_ch" → "de-CH"; "de" → null).</summary>
     public static string MatchTarget(string culture) => Sdk.V1.Languages.MatchTarget(culture);

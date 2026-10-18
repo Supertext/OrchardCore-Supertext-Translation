@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- Export for translation (XLIFF 1.2 or HTML) and import of translated files; Supertext SDK 0.5.0. On the *Translate with Supertext* page: download an item's texts for one or more cultures (HTML: one), have them translated elsewhere, upload the file again; the texts are saved as drafts like translations with Supertext, with a summary (imported, skipped because the source changed, untranslated, formatting changed, not in the file). Texts whose source changed since the export are only imported on request.
+
 - Automatic API key check: when Settings → Supertext is saved, when a key from `SUPERTEXT_API_KEY` is new or changed, and when Supertext rejects the key during a translation. Settings → Supertext shows the latest result with its time (*the connection works*, *rejected*, *no key*, *Supertext can't be reached*, *error*; with the account and API key links where they help) in English, German, French and Italian; it replaces the old "Connected to Supertext" notice.
 - *Send version information to Supertext* (Settings → Supertext → Support, on by default; `SUPERTEXT_VERSION_REPORTS=0` turns it off): when the settings are saved and after an update, the module sends the site URL, the module, Orchard Core, .NET and SDK versions, whether a key is set, the key check result and the ping address to Supertext. No content, no API key and no personal data. Reports are sent after the page is delivered and never break saving or translating.
 - Public ping endpoint `GET /supertext/ping` that only echoes Supertext's challenge, so Supertext can check the site is reachable (404 with version reports off).
@@ -17,6 +19,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - Settings → Supertext shows the installed module version, linked to its GitHub release notes.
 
 ### Changed
+
+- A culture nobody mapped now uses Supertext's obvious default language (Supertext SDK 0.4.0): `de` → `de-DE`, `en` → `en-US`, `fr` → `fr-FR`, `it` → `it-IT`, `pt` → `pt-PT`, `zh-CN` → `zh-Hans`, `es-ES` → `es`; the language mapping pre-selects it. Cultures without an obvious default (`en-IE`, `de-LI`, `gsw` …) still need a mapping.
 
 - All Supertext API calls now go through the official Supertext .NET SDK (0.3.0, commit `f7bd414`, `V1` namespace), compiled into the module (nothing extra to install). The HtmlAgilityPack dependency is gone.
 - **Languages are no longer guessed.** A culture that is a Supertext code (`de-CH`, `fr-CH`, `es`, `zh-Hans`, apart from case and `_`/`-`) is used as it is; every other culture (`de`, `en`, `zh-CN`, `es-ES` …) needs a Supertext language in the **Language mapping** (formerly *Language codes*; existing `culture=code` entries are kept). Supertext only accepts its own codes: regional for German, English, French, Italian and Portuguese, bare for most others (`es`, `nl`, `sl`). An unmapped culture is not sent to Supertext.

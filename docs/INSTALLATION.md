@@ -83,7 +83,8 @@ Each culture needs a **Supertext language**. Supertext accepts exactly these tar
 | All others, without region | `bg`, `cs`, `da`, `el`, `es`, `fi`, `hr`, `hu`, `ja`, `ko`, `nb`, `nl`, `pl`, `rm`, `ru`, `sk`, `sl`, `sq`, `sv`, `tr` |
 
 - A culture whose name **is** one of these codes (apart from upper/lower case and `_`/`-`) is used as it is: `de-CH`, `fr-CH`, `it-CH`, `es`. **Settings → Supertext → Language mapping** pre-selects it.
-- **Every other culture needs a choice** in the language mapping: `de` (Germany, Switzerland or Austria?), `en` (US or UK?), `zh-CN` (→ `zh-Hans`), `es-ES` (→ `es`). The module never guesses a region: an unmapped culture is marked *Not mapped* on the settings page, and translating into or from it ends with *The language … has no Supertext language yet* (nothing is sent to Supertext).
+- **Where the default is obvious, it is pre-selected** (Supertext SDK defaults): `de` → `de-DE`, `en` → `en-US`, `fr` → `fr-FR`, `it` → `it-IT`, `pt` → `pt-PT`, `zh-CN` → `zh-Hans`, `zh-TW` → `zh-Hant`, a region of a language without regions → the language (`es-ES` → `es`). Choose another code in the language mapping if you want, for example, Swiss German spelling (`de` → `de-CH`).
+- **Every other culture needs a choice**: `en-IE`, `de-LI`, `fr-BE`, `gsw` … Such a culture is marked *Not mapped* on the settings page, and translating into or from it ends with *The language … has no Supertext language yet* (nothing is sent to Supertext).
 - The source is sent as its language without region (`en-US` → `en`); a mapped culture is sent in its source form (`de` mapped to `de-CH` → `de`).
 - The form of address (*Formal*/*Informal*) isn't offered by Supertext for English, Swiss German, Romansh, Albanian and Serbian. Those languages are translated in the default tone, and the language mapping says so next to them.
 
@@ -103,10 +104,12 @@ The module's own screens (the *Supertext* buttons, the *Translate with Supertext
 
 | Permission | Default roles | Allows |
 | --- | --- | --- |
-| Translate content with Supertext | Administrator, Editor | The *Supertext* buttons and the *Translate with Supertext* page, together with *Localize content* and *Edit content* on the item (the buttons only show when the user has all three). |
+| Translate content with Supertext | Administrator, Editor | The *Supertext* buttons and the *Translate with Supertext* page, together with *Localize content* and *Edit content* on the item (the buttons only show when the user has all three). The same applies to *Export for translation* and *Import translation* on that page; importing into an existing language version also needs *Edit content* on it. |
 | Manage Supertext settings | Administrator | **Settings → Supertext** |
 
 Grant them on the **Roles** page (`/Admin/Roles/Index`).
+
+**Export for translation / Import translation** (XLIFF 1.2 or HTML files, see the user guide) need nothing to configure and no API key: they don't call Supertext. Uploads are limited to 10 MB (larger requests are refused before the file is read) and are read in memory, never stored. A reverse proxy in front of the site must allow request bodies of at least 11 MB for imports (for example `client_max_body_size 11m;` in nginx).
 
 ## All settings
 
@@ -116,7 +119,7 @@ Grant them on the **Roles** page (`/Admin/Roles/Index`).
 | API endpoint | `https://api.supertext.com/v1/` | Change only for testing. Must be `https` (plain `http` only to `localhost`), because the API key travels with every request. Read-only while `SUPERTEXT_API_ENDPOINT` is set. |
 | Translate new localizations automatically | on | When an editor creates a culture version with Orchard Core's *Localizations* menu, the copy is translated before the editor opens it. Off: the copy stays in the source language; *Translate with Supertext* still works. |
 | Form of address | As in the source | *Formal* or *Informal* for languages that distinguish them (German *Sie*/*du*, French *vous*/*tu* …). Languages Supertext offers no choice for (English, Swiss German, Romansh, Albanian, Serbian) are translated in the default tone. |
-| Language mapping | cultures that are Supertext codes | One row per culture of the site with the Supertext language it is translated into and from (see [Language setup](#language-setup)). Cultures that are Supertext codes are pre-selected; others (`de`, `en`, `zh-CN` …) must be chosen, there are no default regions. Stored as `culture=code` lines in the site settings (mappings for cultures you removed are kept). |
+| Language mapping | cultures that are Supertext codes | One row per culture of the site with the Supertext language it is translated into and from (see [Language setup](#language-setup)). Cultures that are Supertext codes are pre-selected, and so is the obvious default for the others (`de` → `de-DE`, `es-ES` → `es`, `zh-CN` → `zh-Hans`); cultures without one (`en-IE`, `gsw` …) must be chosen. Stored as `culture=code` lines in the site settings (mappings for cultures you removed are kept). |
 | Fields not to translate | – | One per line (or separated by commas): `Part.Field` (e.g. `Article.Subtitle`), a whole part (e.g. `HtmlBodyPart`) or `ContentType.Part.Field`. These keep the source text. |
 | Timeout per language | 300 s | How long to wait for Supertext per language before giving up (30–3600 s). |
 | Send version information to Supertext | on | See [Version information and the API key check](#version-information-and-the-api-key-check). `SUPERTEXT_VERSION_REPORTS` overrides it. |

@@ -68,7 +68,7 @@ public sealed class SupertextConfiguration(
     public static IReadOnlyDictionary<string, string> Mapping(SupertextSettings settings)
         => LanguageMapping.Parse(settings.LanguageMapping);
 
-    /// <summary>The target code sent to Supertext for an Orchard Core culture: the mapping, else the culture if it is a Supertext code (no default regions).</summary>
+    /// <summary>The target code sent to Supertext for an Orchard Core culture: the mapping, else the culture if it is a Supertext code (else the SDK's default target).</summary>
     /// <exception cref="SupertextException"><c>unsupported_language</c> when the culture has no Supertext language.</exception>
     public static string TargetLanguageCode(SupertextSettings settings, string culture)
         => LanguageMapping.Target(culture, Mapping(settings));
