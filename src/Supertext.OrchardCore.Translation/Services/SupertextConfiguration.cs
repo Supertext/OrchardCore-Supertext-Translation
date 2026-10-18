@@ -64,11 +64,11 @@ public sealed class SupertextConfiguration(
     public string EndpointInEffect(SupertextSettings settings)
         => FirstNonEmpty(EndpointFromEnvironment, settings.Endpoint, SupertextClient.DefaultEndpoint);
 
-    /// <summary>The Language mapping setting (culture → Supertext code).</summary>
+    /// <summary>The Language mapping setting (culture → Supertext code), with older values migrated (<see cref="LanguageMapping.Migrate"/>).</summary>
     public static IReadOnlyDictionary<string, string> Mapping(SupertextSettings settings)
-        => LanguageMapping.Parse(settings.LanguageMapping);
+        => LanguageMapping.Migrate(LanguageMapping.Parse(settings.LanguageMapping));
 
-    /// <summary>The target code sent to Supertext for an Orchard Core culture: the mapping, else the culture if it is a Supertext code (else the SDK's default target).</summary>
+    /// <summary>The target code sent to Supertext for an Orchard Core culture: the mapping, else the culture if it is a Supertext code, else the SDK default (de → de-DE).</summary>
     /// <exception cref="SupertextException"><c>unsupported_language</c> when the culture has no Supertext language.</exception>
     public static string TargetLanguageCode(SupertextSettings settings, string culture)
         => LanguageMapping.Target(culture, Mapping(settings));

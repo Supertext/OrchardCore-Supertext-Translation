@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Supertext.OrchardCore.Translation.Tests;
 
-/// <summary>Cultures → Supertext codes: the mapping, else an exact Supertext code, else the SDK's default target, else unsupported_language.</summary>
+/// <summary>Cultures → Supertext codes: the mapping, else an exact Supertext code, else the SDK default (de → de-DE), else unsupported_language.</summary>
 public class LanguageMappingTests
 {
     private static readonly IReadOnlyDictionary<string, string> Mapping = LanguageMapping.Parse("de = de-CH\nen=en-US\n\nbroken line\nzh-CN=zh-Hans\nDE=de-AT\n");
@@ -25,10 +25,11 @@ public class LanguageMappingTests
     [InlineData("fr_ch", "fr-CH")]
     [InlineData("es", "es")]           // bare for languages without regions
     [InlineData("sl", "sl")]
-    [InlineData("fr", "fr-FR")]        // default target (SDK 0.4.0)
+    [InlineData("fr", "fr-FR")]        // SDK defaults
     [InlineData("it", "it-IT")]
-    [InlineData("es-ES", "es")]        // a region of a bare target
+    [InlineData("es-ES", "es")]
     [InlineData("sl-SI", "sl")]
+    [InlineData("zh-TW", "zh-Hant")]
     [InlineData("zh-CN", "zh-Hans")]
     public void Target_is_the_mapping_an_exact_code_or_the_default(string culture, string expected)
         => Assert.Equal(expected, LanguageMapping.Target(culture, Mapping));
@@ -37,6 +38,7 @@ public class LanguageMappingTests
     [InlineData("en-IE")]   // no obvious default: needs a mapping
     [InlineData("de-LI")]
     [InlineData("gsw")]
+    [InlineData("sr-RS")]
     [InlineData("xx")]
     public void Unmapped_culture_is_an_unsupported_language(string culture)
     {
@@ -78,5 +80,29 @@ public class LanguageMappingTests
         Assert.Equal("de-CH", LanguageMapping.MatchTarget("de_ch"));
         Assert.Null(LanguageMapping.MatchTarget("de"));
         Assert.False(LanguageMapping.SupportsPoliteness("en-GB"));
+        Assert.Equal(LanguageMapping.Targets.Count, LanguageMapping.TargetOptions.Count);
+        Assert.True(LanguageMapping.IsSupportedTarget("de_ch"));
+        Assert.False(LanguageMapping.IsSupportedTarget("es-ES"));
+    }
+
+    [Theory]
+    [InlineData("de-CH", "de-CH")]   // exact
+    [InlineData("de", "de-DE")]      // default
+    [InlineData("zh-HK", "zh-Hant")]
+    [InlineData("nl_NL", "nl")]
+    [InlineData("en-IE", null)]      // the select shows "— choose —"
+    [InlineData("gsw", null)]
+    public void Suggests_the_exact_code_else_the_default(string culture, string expected)
+        => Assert.Equal(expected, LanguageMapping.SuggestTarget(culture));
+
+    [Fact]
+    public void Migrates_stored_codes_without_losing_any()
+    {
+        var migrated = LanguageMapping.Migrate(LanguageMapping.Parse("es=es-ES\nde=de_ch\nfr=fr\nen-IE=en-GB\nxx=xx-YY"));
+        Assert.Equal("es", migrated["es"]);        // not a Supertext code, obvious replacement
+        Assert.Equal("de-CH", migrated["DE"]);     // Supertext's spelling
+        Assert.Equal("fr-FR", migrated["fr"]);
+        Assert.Equal("en-GB", migrated["en-IE"]);  // already a Supertext code
+        Assert.Equal("xx-YY", migrated["xx"]);     // unknown: kept, the settings page flags it
     }
 }

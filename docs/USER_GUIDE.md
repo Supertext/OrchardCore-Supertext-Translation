@@ -100,7 +100,7 @@ Markdown is translated as text: links and emphasis usually survive, but check th
 | *German (Switzerland): translated as a draft (12 texts).* | Done. Review and publish. |
 | *… translated as a draft, but 2 text(s) kept the source wording* | Supertext returned those texts damaged or empty; they're still in the source language. Translate them by hand or try again. |
 | *… not translated. Authentication failed …* / *No Supertext API key is configured* | Ask your administrator to check the Supertext settings. |
-| *… not translated. The language … has no Supertext language yet* | Your administrator hasn't chosen which Supertext language this culture is (for example Swiss or German German for `de`). Ask them to map it under Settings → Supertext → Language mapping; the other languages are translated. |
+| *… not translated. The language … has no Supertext language yet* | Supertext has no obvious language for this culture (for example `en-IE` or `de-LI`), and your administrator hasn't chosen one yet. Ask them to choose it under Settings → Supertext → Language mapping; the other languages are translated. |
 | *… not translated. Supertext does not support this language pair (en → …)* | Supertext can't translate into this culture, or its language mapping is wrong. Tell your administrator. |
 | *… not translated. Supertext offers no formal or informal tone for this language* | The form of address setting doesn't fit this language. Ask your administrator to set it to *As in the source*. |
 | *… not translated. Too many requests …* | Try again in a minute. |

@@ -67,7 +67,7 @@ public sealed class SupertextSettingsDisplayDriver(
             model.Politeness = settings.Politeness ?? "default";
             model.TranslateNewLocalizations = settings.TranslateNewLocalizations;
             model.Mappings = cultures.Select(culture => MappingRow(culture, mapping, settings.Politeness)).ToList();
-            model.TargetLanguages = LanguageMapping.Targets;
+            model.TargetLanguages = TargetOptions();
             model.ExcludedFields = settings.ExcludedFields;
             model.PollTimeoutSeconds = settings.PollTimeoutSeconds;
             model.SendVersionInformation = settings.SendVersionInformation;
@@ -98,6 +98,20 @@ public sealed class SupertextSettingsDisplayDriver(
             context.Updater.ModelState.AddModelError(Prefix, nameof(model.PollTimeoutSeconds), S["The timeout must be between 30 and 3600 seconds."]);
         }
 
+        // Only Supertext's codes; a code stored earlier that isn't in the list may stay as it is.
+        var storedMapping = SupertextConfiguration.Mapping(settings);
+        for (var i = 0; i < (model.Mappings?.Count ?? 0); i++)
+        {
+            var row = model.Mappings[i];
+            var code = row?.Code?.Trim();
+            if (string.IsNullOrEmpty(code) || LanguageMapping.IsSupportedTarget(code)
+                || (row.Culture is not null && storedMapping.TryGetValue(row.Culture.Trim(), out var kept) && kept == code))
+            {
+                continue;
+            }
+            context.Updater.ModelState.AddModelError(Prefix, $"Mappings[{i}].Code", S["Supertext doesn't offer the code {0}. Choose a language from the list.", code]);
+        }
+
         if (context.Updater.ModelState.IsValid)
         {
             if (model.RemoveApiKey)
@@ -115,7 +129,7 @@ public sealed class SupertextSettingsDisplayDriver(
             }
             settings.Politeness = model.Politeness is "more" or "less" ? model.Politeness : "default";
             settings.TranslateNewLocalizations = model.TranslateNewLocalizations;
-            settings.LanguageMapping = MergeMapping(settings.LanguageMapping, model.Mappings);
+            settings.LanguageMapping = MergeMapping(storedMapping, model.Mappings);
             settings.ExcludedFields = model.ExcludedFields?.Trim();
             settings.PollTimeoutSeconds = model.PollTimeoutSeconds;
             // A disabled checkbox (SUPERTEXT_VERSION_REPORTS set) isn't posted: keep the stored value.
@@ -146,24 +160,39 @@ public sealed class SupertextSettingsDisplayDriver(
         => Uri.TryCreate(endpoint, UriKind.Absolute, out var uri)
             && (uri.Scheme == Uri.UriSchemeHttps || (uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback));
 
-    /// <summary>A row of the Language mapping table: the stored code, else the suggested Supertext code (the exact match, else the SDK's default target).</summary>
+    /// <summary>
+    /// Supertext's targets for the selects, named in the back-end language where .NET knows the code
+    /// ("Deutsch (Schweiz)"), else by the SDK's English name, sorted by that name.
+    /// </summary>
+    private static IReadOnlyList<TargetOption> TargetOptions()
+        => LanguageMapping.TargetOptions
+            .Select(l => new TargetOption(l.Code, CultureNames.DisplayNameOr(l.Code, l.Name)))
+            .OrderBy(o => o.Name, StringComparer.Create(System.Globalization.CultureInfo.CurrentUICulture, ignoreCase: true))
+            .ToList();
+
+    /// <summary>A row of the Language mapping table: the stored code, else the SDK's suggestion (exact match, else default: de → de-DE), else none.</summary>
     private static LanguageMappingRow MappingRow(string culture, IReadOnlyDictionary<string, string> mapping, string politeness)
     {
-        var code = mapping.TryGetValue(culture, out var mapped) ? mapped : LanguageMapping.SuggestTarget(culture) ?? string.Empty;
+        var stored = mapping.TryGetValue(culture, out var mapped);
+        var code = stored ? mapped : LanguageMapping.SuggestTarget(culture) ?? string.Empty;
         return new LanguageMappingRow
         {
             Culture = culture,
             CultureName = CultureNames.Get(culture),
             Code = code,
+            Suggested = !stored && code != string.Empty,
             UnknownCode = code != string.Empty && LanguageMapping.MatchTarget(code) is null,
             PolitenessUnavailable = code != string.Empty && politeness is "more" or "less" && LanguageMapping.SupportsPoliteness(code) == false,
         };
     }
 
-    /// <summary>The posted rows over the stored mapping; entries for cultures the site no longer has are kept.</summary>
-    private static string MergeMapping(string stored, IEnumerable<LanguageMappingRow> rows)
+    /// <summary>
+    /// The posted rows over the stored (migrated) mapping; entries for cultures the site no longer has are
+    /// kept. A posted code is stored as Supertext writes it (de_ch → de-CH).
+    /// </summary>
+    private static string MergeMapping(IReadOnlyDictionary<string, string> stored, IEnumerable<LanguageMappingRow> rows)
     {
-        var mapping = new Dictionary<string, string>(LanguageMapping.Parse(stored), StringComparer.OrdinalIgnoreCase);
+        var mapping = new Dictionary<string, string>(stored, StringComparer.OrdinalIgnoreCase);
         foreach (var row in rows ?? [])
         {
             if (string.IsNullOrWhiteSpace(row?.Culture))
@@ -176,7 +205,7 @@ public sealed class SupertextSettingsDisplayDriver(
             }
             else
             {
-                mapping[row.Culture.Trim()] = row.Code.Trim();
+                mapping[row.Culture.Trim()] = LanguageMapping.MatchTarget(row.Code) ?? row.Code.Trim();
             }
         }
         return LanguageMapping.Serialize(mapping);

@@ -408,8 +408,8 @@ msgstr "Association des langues"
 
 #: Views/SupertextSettings.Edit.cshtml
 msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
-msgid "The Supertext language each culture is translated into (and from). Cultures whose name is a Supertext code (de-CH, fr-CH, es …) are pre-selected; others, such as de or en, need a choice, because Supertext needs to know the region."
-msgstr "La langue Supertext vers laquelle (et depuis laquelle) chaque culture est traduite. Les cultures dont le nom est un code Supertext (de-CH, fr-CH, es…) sont présélectionnées ; pour les autres, comme de ou en, choisissez une langue, car Supertext doit connaître la région."
+msgid "The Supertext language each culture is translated into (and from). Each culture is pre-selected with its Supertext code (de-CH, es …) or the usual default (de → de-DE, en → en-US, fr → fr-FR, it → it-IT, pt → pt-PT, zh → zh-Hans); pick another one to change it. Cultures without an obvious Supertext language (en-IE, de-LI …) need a choice."
+msgstr "La langue Supertext vers laquelle (et depuis laquelle) chaque culture est traduite. Chaque culture est présélectionnée avec son code Supertext (de-CH, es …) ou la valeur par défaut habituelle (de → de-DE, en → en-US, fr → fr-FR, it → it-IT, pt → pt-PT, zh → zh-Hans) ; choisissez-en une autre pour la modifier. Les cultures sans langue Supertext évidente (en-IE, de-LI …) nécessitent un choix."
 
 #: Views/SupertextSettings.Edit.cshtml
 msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
@@ -428,8 +428,8 @@ msgstr "Langue Supertext"
 
 #: Views/SupertextSettings.Edit.cshtml
 msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
-msgid "Not mapped"
-msgstr "Non associée"
+msgid "— choose —"
+msgstr "— choisir —"
 
 #: Views/SupertextSettings.Edit.cshtml
 msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
@@ -645,3 +645,13 @@ msgstr "Enregistré comme brouillon. Ouvrez-le pour le vérifier."
 msgctxt "Supertext.OrchardCore.Translation.Views.Admin.Translate"
 msgid "Nothing was imported."
 msgstr "Rien n’a été importé."
+
+#: Views/SupertextSettings.Edit.cshtml
+msgctxt "Supertext.OrchardCore.Translation.Views.SupertextSettings.Edit"
+msgid "Suggested by Supertext."
+msgstr "Proposé par Supertext."
+
+#: Drivers/SupertextSettingsDisplayDriver.cs
+msgctxt "Supertext.OrchardCore.Translation.Drivers.SupertextSettingsDisplayDriver"
+msgid "Supertext doesn't offer the code {0}. Choose a language from the list."
+msgstr "Supertext ne propose pas le code {0}. Choisissez une langue dans la liste."

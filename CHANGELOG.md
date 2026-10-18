@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## Unreleased
 
+### Changed
+
+- **Supertext SDK 0.4.0: default languages.** A culture you haven't mapped now uses its obvious Supertext language instead of failing: `de` → `de-DE`, `en` → `en-US`, `fr` → `fr-FR`, `it` → `it-IT`, `pt` → `pt-PT`, `zh` → `zh-Hans`, `zh-TW` → `zh-Hant`, `es-ES` → `es`, `nl-NL` → `nl`. The **Language mapping** selects on Settings → Supertext are pre-selected with that default (*Suggested by Supertext*); only cultures without one (`en-IE`, `de-LI`, `gsw` …) show *— choose —* and *Not mapped*. Language names in the selects follow the back-end language. Saved codes Supertext doesn't accept are updated where the replacement is obvious (`es-ES` → `es`); other saved values are kept. Only Supertext's codes can be saved.
+
 ### Added
 
 - Export for translation (XLIFF 1.2 or HTML) and import of translated files; Supertext SDK 0.5.0. On the *Translate with Supertext* page: download an item's texts for one or more cultures (HTML: one), have them translated elsewhere, upload the file again; the texts are saved as drafts like translations with Supertext, with a summary (imported, skipped because the source changed, untranslated, formatting changed, not in the file). Texts whose source changed since the export are only imported on request.
